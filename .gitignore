@@ -1,0 +1,21 @@
+node_modules/
+dist/
+build/
+*.log
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+.vscode/
+.idea/
+coverage/
+
+# Prisma
+backend/prisma/*.db
+backend/prisma/dev.db*
+
+# almacenamiento local de fotos (adaptador dev/test, nunca commitear evidencia)
+backend/storage-local/

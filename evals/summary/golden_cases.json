@@ -1,0 +1,31 @@
+{
+  "descripcion": "Golden cases para summaryService (FR-020, Principio IV de la constitución). Cada caso define input->output esperado. No se acepta resumen especulativo: notas insuficientes deben producir el fallback explícito, textual, sin inventar contenido.",
+  "cases": [
+    {
+      "id": "nominal",
+      "notes": "Se detectó una fuga en la válvula principal del sistema de calefacción. Se reemplazó la junta tórica deteriorada y se purgó el aire del circuito. Se probó el sistema durante 15 minutos sin nuevas fugas. Cliente confirmó funcionamiento correcto antes de finalizar la visita.",
+      "expectedBehavior": "summary presente, no vacío, generado a partir de las notas (no inventado)",
+      "expectedFallback": false
+    },
+    {
+      "id": "evidencia_insuficiente_vacia",
+      "notes": "",
+      "expectedBehavior": "fallback explícito, notas vacías",
+      "expectedFallback": true,
+      "expectedMessage": "Evidencia insuficiente para generar resumen"
+    },
+    {
+      "id": "evidencia_insuficiente_corta",
+      "notes": "Listo, todo ok.",
+      "expectedBehavior": "fallback explícito, menos de 20 palabras",
+      "expectedFallback": true,
+      "expectedMessage": "Evidencia insuficiente para generar resumen"
+    },
+    {
+      "id": "notas_ambiguas",
+      "notes": "Revisé varias cosas, algo estaba raro pero creo que ya quedó, no estoy seguro si vuelve a pasar o no, habrá que ver.",
+      "expectedBehavior": "genera resumen igualmente (>=20 palabras) pero NO debe inventar causa raíz ni certeza que las notas no dan — el resumen debe reflejar la ambigüedad, no resolverla",
+      "expectedFallback": false
+    }
+  ]
+}

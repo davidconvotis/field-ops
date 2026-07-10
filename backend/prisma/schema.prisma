@@ -1,0 +1,118 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  cliente
+  tecnico
+  dispatcher
+  supervisor
+}
+
+enum OrderStatus {
+  sin_asignar
+  pendiente_de_revision
+  aprobada
+  rechazada
+}
+
+enum AuditAction {
+  crear
+  asignar
+  reasignar
+  desactivar_tecnico_reasigna
+  enviar_ejecucion
+  aprobar
+  rechazar
+  conflicto_concurrente
+}
+
+model User {
+  id     String   @id @default(uuid())
+  role   UserRole
+  activo Boolean  @default(true)
+  nombre String
+  email  String   @unique
+
+  ordersAsClient    Order[] @relation("ClientOrders")
+  ordersAsTechnician Order[] @relation("TechnicianOrders")
+  executionRecords  ExecutionRecord[]
+  auditLogEntries   AuditLogEntry[]
+  resolvedOrders    Order[] @relation("ResolvedByOrders")
+
+  createdAt DateTime @default(now())
+}
+
+model Order {
+  id           String      @id @default(uuid())
+  status       OrderStatus @default(sin_asignar)
+  clientId     String
+  client       User        @relation("ClientOrders", fields: [clientId], references: [id])
+  technicianId String?
+  technician   User?       @relation("TechnicianOrders", fields: [technicianId], references: [id])
+  version      Int         @default(0)
+
+  rejectionReason    String?
+  resolvedByUserId   String?
+  resolvedBy         User?    @relation("ResolvedByOrders", fields: [resolvedByUserId], references: [id])
+
+  createdAt    DateTime  @default(now())
+  assignedAt   DateTime?
+  submittedAt  DateTime?
+  resolvedAt   DateTime?
+
+  executionRecord ExecutionRecord?
+  auditLogEntries AuditLogEntry[]
+
+  @@index([clientId])
+  @@index([technicianId])
+  @@index([status])
+}
+
+model ExecutionRecord {
+  id             String   @id @default(uuid())
+  orderId        String   @unique
+  order          Order    @relation(fields: [orderId], references: [id])
+  technicianId   String
+  technician     User     @relation(fields: [technicianId], references: [id])
+  notes          String
+  idempotencyKey String   @unique
+  payloadHash    String
+  submittedAt    DateTime @default(now())
+
+  photos EvidencePhoto[]
+}
+
+model EvidencePhoto {
+  id                 String    @id @default(uuid())
+  executionRecordId  String
+  executionRecord    ExecutionRecord @relation(fields: [executionRecordId], references: [id])
+  mimeType           String
+  storageKey         String?
+  sizeBytes          Int
+  uploadedAt         DateTime  @default(now())
+  retentionExpiresAt DateTime
+
+  @@index([executionRecordId])
+  @@index([retentionExpiresAt])
+}
+
+model AuditLogEntry {
+  id                 String      @id @default(uuid())
+  orderId            String
+  order               Order       @relation(fields: [orderId], references: [id])
+  actorUserId        String
+  actor              User        @relation(fields: [actorUserId], references: [id])
+  action             AuditAction
+  timestamp          DateTime    @default(now())
+  metadata           String?
+  retentionExpiresAt DateTime
+
+  @@index([orderId])
+  @@index([retentionExpiresAt])
+}
