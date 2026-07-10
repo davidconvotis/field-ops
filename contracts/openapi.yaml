@@ -1,0 +1,312 @@
+openapi: 3.0.3
+info:
+  title: FieldOps — Gestión de Órdenes de Trabajo
+  version: 0.1.0
+  description: >
+    Contrato canónico (Principio II de la constitución — ruta fija /contracts/openapi.yaml).
+    Cubre el slice: creación/(re)asignación de órdenes, registro de ejecución con evidencia,
+    aprobación/rechazo, y listado por rol. Ver /specs/001-work-order-management/spec.md para
+    los requisitos funcionales y no funcionales completos (FR-000..FR-020, NFR-01..NFR-08b).
+
+servers:
+  - url: /api/v1
+
+security:
+  - bearerAuth: []
+
+paths:
+  /orders:
+    post:
+      operationId: createOrder
+      summary: Crear orden (FR-001) — rol dispatcher
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [clientId]
+              properties:
+                clientId: { type: string, format: uuid }
+      responses:
+        '201':
+          description: Orden creada en estado sin_asignar
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Order' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+    get:
+      operationId: listOrders
+      summary: Listar órdenes con alcance por rol (FR-017, FR-018) — todos los roles
+      responses:
+        '200':
+          description: >
+            Cliente: solo sus órdenes. Técnico: solo asignadas a él.
+            Dispatcher/supervisor: todas, sin restricción de equipo/región.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Order' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
+  /orders/{orderId}:
+    parameters:
+      - $ref: '#/components/parameters/OrderId'
+    get:
+      operationId: getOrder
+      summary: Detalle de orden + resumen IA de notas si aplica (FR-020) — todos los roles con acceso
+      responses:
+        '200':
+          description: >
+            Incluye `summary` (P95 ≤5s) o `summaryUnavailable=true` si el servicio de
+            resumen falla/excede el tiempo (degradación de FR-020, nunca bloquea la vista).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OrderDetail' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: Rol sin acceso potencial a este tipo de orden (FR-019, 403 uniforme, no filtra existencia)
+        '404':
+          description: No existe, o rol tiene acceso potencial a la ruta pero no a esta orden (FR-019)
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
+  /orders/{orderId}/assign:
+    parameters:
+      - $ref: '#/components/parameters/OrderId'
+    patch:
+      operationId: assignOrder
+      summary: (Re)asignar técnico (FR-002, FR-003, FR-004, FR-05b) — rol dispatcher
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [technicianId, expectedVersion]
+              properties:
+                technicianId: { type: string, format: uuid }
+                expectedVersion:
+                  type: integer
+                  description: version leída previamente, para chequeo atómico (FR-05b)
+      responses:
+        '200':
+          description: Reasignado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Order' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Orden transicionó a estado terminal entre lectura e intento (FR-05b), o técnico ya no está activo
+        '422':
+          description: Orden en estado terminal (FR-003), o technicianId inexistente/inactivo (FR-004)
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
+  /technicians/{technicianId}/activo:
+    parameters:
+      - name: technicianId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    patch:
+      operationId: setTechnicianActive
+      summary: Activar/desactivar técnico (Clarifications ronda 1 Q1; dispara FR-004d) — rol dispatcher
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [activo]
+              properties:
+                activo: { type: boolean }
+      responses:
+        '200':
+          description: >
+            Estado actualizado. Si activo=false, toda orden en sin_asignar/pendiente_de_revision
+            asignada a este técnico vuelve a sin_asignar (FR-004d), registrado en audit log.
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
+  /orders/{orderId}/executions:
+    parameters:
+      - $ref: '#/components/parameters/OrderId'
+    post:
+      operationId: submitExecution
+      summary: >
+        Registrar ejecución con evidencia (FR-005..FR-012b) — rol técnico, orden asignada a él.
+        Idempotente vía header Idempotency-Key.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [notes, photos]
+              properties:
+                notes: { type: string, description: 'no vacío tras trim (FR-007)' }
+                photos:
+                  type: array
+                  minItems: 1
+                  items: { type: string, format: binary }
+                  description: 'jpg/png/heic, validado por magic bytes (FR-008); todo-o-nada (FR-009)'
+      responses:
+        '200':
+          description: Reintento idempotente exitoso — devuelve el resultado del envío original (FR-012)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ExecutionRecord' }
+        '201':
+          description: Ejecución registrada, orden transiciona a pendiente_de_revision (FR-005)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ExecutionRecord' }
+        '400':
+          description: Sin fotos (FR-006), o notas vacías/ausentes (FR-007)
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: Orden no asignada a este técnico, chequeo atómico en escritura (FR-010)
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: >
+            Orden en estado terminal (FR-011), o Idempotency-Key reutilizado con payload
+            distinto (FR-012b)
+        '415':
+          description: Al menos un archivo no es imagen válida por contenido; rollback todo-o-nada (FR-009/NFR-08)
+        '502': { description: 'Fallo del storage de fotos (NFR-06b)' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+        '504': { description: 'Timeout del storage de fotos excedido (NFR-06b)' }
+
+  /orders/{orderId}/approve:
+    parameters:
+      - $ref: '#/components/parameters/OrderId'
+    post:
+      operationId: approveOrder
+      summary: Aprobar orden (FR-013, FR-016, FR-016b) — rol supervisor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                expectedVersion: { type: integer }
+      responses:
+        '200':
+          description: Aprobada (terminal)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Order' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: >
+            No-op: orden ya no está en pendiente_de_revision (ya aprobada/rechazada,
+            posiblemente por un rechazo concurrente — FR-016b); cuerpo incluye estado final real
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
+  /orders/{orderId}/reject:
+    parameters:
+      - $ref: '#/components/parameters/OrderId'
+    post:
+      operationId: rejectOrder
+      summary: Rechazar orden (FR-014, FR-015, FR-016, FR-016b) — rol supervisor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string, description: 'obligatorio, no vacío tras trim (FR-014)' }
+                expectedVersion: { type: integer }
+      responses:
+        '200':
+          description: Rechazada (terminal)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Order' }
+        '400':
+          description: Motivo ausente/vacío tras trim (FR-014)
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: No-op — orden ya no está en pendiente_de_revision (FR-016/FR-016b)
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        Verificado por idpAdapter (Research §3). Token ausente/inválido/expirado → 401.
+        Fallo del validador externo (IdP/JWKS inalcanzable) → 503, nunca 401 (NFR-03b).
+
+  parameters:
+    OrderId:
+      name: orderId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+
+  responses:
+    Unauthorized:
+      description: Token ausente o inválido (NFR-03, FR-000)
+    Forbidden:
+      description: Token válido, rol sin permiso para la operación (FR-000, FR-019)
+    NotFound:
+      description: orderId inexistente, o rol con acceso potencial a la ruta sin acceso a esta orden (FR-019)
+    ServiceUnavailable:
+      description: >
+        Fallo de dependencia externa crítica (KMS NFR-02b, IdP NFR-03b, audit log NFR-04b,
+        antivirus NFR-08b) — la operación se aborta por completo, nunca degrada de forma insegura
+
+  schemas:
+    Order:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        status:
+          type: string
+          enum: [sin_asignar, pendiente_de_revision, aprobada, rechazada]
+        clientId: { type: string, format: uuid }
+        technicianId: { type: string, format: uuid, nullable: true }
+        version: { type: integer }
+        rejectionReason: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+        assignedAt: { type: string, format: date-time, nullable: true }
+        submittedAt: { type: string, format: date-time, nullable: true }
+        resolvedAt: { type: string, format: date-time, nullable: true }
+
+    OrderDetail:
+      allOf:
+        - $ref: '#/components/schemas/Order'
+        - type: object
+          properties:
+            summary: { type: string, nullable: true }
+            summaryUnavailable: { type: boolean }
+
+    ExecutionRecord:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        orderId: { type: string, format: uuid }
+        notes: { type: string }
+        submittedAt: { type: string, format: date-time }
+        photoCount: { type: integer }

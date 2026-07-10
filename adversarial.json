@@ -1,0 +1,114 @@
+{
+  "huecos": [
+    {
+      "id": "H-001",
+      "categoria": "SEGURIDAD",
+      "rf_afectado": "N/A (ausente)",
+      "descripcion": "spec.md no incluye ninguna seccion de Non-Functional Requirements. Los NFR de SPEC-v2.md (cifrado AES-256 en reposo, TLS 1.2+, atomicidad audit-log/cambio de estado, fallo de KMS -> 503, diferenciacion 401 vs 503 en fallo de IdP, timeout explicito de servicios externos) solo sobreviven como narrativa suelta en 'Edge Cases', sin ID de requisito ni criterio de aceptacion.",
+      "pregunta_critica": "Si no hay un FR/NFR con ID propio que diga 'las fotos de evidencia MUST cifrarse en reposo con AES-256', ¿que impide que una implementacion las guarde en claro y aun asi pase el checklist de requisitos?",
+      "riesgo_si_no_se_corrige": "Se implementa el sistema sin cifrado, sin TLS obligatorio o sin atomicidad audit-log/estado, violando NFR-02/NFR-03b/NFR-04b de SPEC-v2 y el Principio I y III de la constitucion (RBAC doble capa, trazabilidad requisito->test), sin que ningun test lo detecte porque no hay requisito formal que testear.",
+      "severidad": "BLOQUEANTE"
+    },
+    {
+      "id": "H-002",
+      "categoria": "ESCALADA_PRIVILEGIOS",
+      "rf_afectado": "FR-001, FR-002, FR-013, FR-015",
+      "descripcion": "Ningun FR declara explicitamente que un tecnico o cliente reciba 403 si invoca las operaciones de creacion/reasignacion (reservadas a dispatcher) o de aprobacion/rechazo (reservadas a supervisor). Solo se infiere el rol del actor en el 'happy path', nunca se especifica el rechazo cruzado de rol.",
+      "pregunta_critica": "FR-001 no dice que ocurre si un tecnico o un cliente llama directamente al endpoint de creacion de orden o de aprobacion/rechazo sin pasar por la UI de dispatcher/supervisor: ¿se rechaza con 403 explicitamente, o queda a discrecion de la implementacion?",
+      "riesgo_si_no_se_corrige": "Un tecnico o cliente con credenciales validas pero rol incorrecto podria crear ordenes, reasignarse a si mismo trabajo, o auto-aprobar/rechazar ordenes via API directa, incumpliendo el Principio I (RBAC en doble capa, NON-NEGOTIABLE) de la constitucion.",
+      "severidad": "BLOQUEANTE"
+    },
+    {
+      "id": "H-003",
+      "categoria": "SEGURIDAD",
+      "rf_afectado": "Key Entities: Foto de evidencia, Registro de auditoria",
+      "descripcion": "El cifrado en reposo y la retencion/borrado automatico de 12 meses se describen como atributos de la entidad, no como comportamiento obligatorio (MUST) con verbo normativo ni con criterio de aceptacion medible.",
+      "pregunta_critica": "¿Que test o criterio de aceptacion verifica que una foto subida hace 12 meses y 1 dia efectivamente fue borrada del almacenamiento, y no solo marcada logicamente como expirada?",
+      "riesgo_si_no_se_corrige": "El borrado automatico nunca se implementa o se implementa como soft-delete, incumpliendo NFR-04c de SPEC-v2 sin que ningun test lo detecte.",
+      "severidad": "ALTA"
+    },
+    {
+      "id": "H-004",
+      "categoria": "AMBIGUEDAD",
+      "rf_afectado": "FR-004",
+      "descripcion": "FR-004 rechaza asignar un 'tecnicoId inexistente o inactivo', pero ninguna Key Entity define el atributo 'activo/inactivo' de Usuario, ni quien ni bajo que condicion lo cambia (baja logica, suspension disciplinaria, licencia temporal, vacaciones).",
+      "pregunta_critica": "¿'Tecnico inactivo' significa una baja permanente en el sistema, una suspension temporal, o simplemente estar fuera de turno? Cada interpretacion cambia el flujo de reasignacion de forma distinta.",
+      "riesgo_si_no_se_corrige": "La implementacion elige una definicion arbitraria (p.ej. solo baja permanente) dejando reasignar trabajo a un tecnico suspendido disciplinariamente, o al contrario, bloqueando reasignaciones legitimas a tecnicos de vacaciones.",
+      "severidad": "ALTA"
+    },
+    {
+      "id": "H-005",
+      "categoria": "AMBIGUEDAD",
+      "rf_afectado": "FR-007",
+      "descripcion": "'Notas de texto no vacias' (tras trim) no define longitud minima significativa. Un solo caracter ('a') pasaria la validacion. La constitucion (Principio IV) exige >=20 palabras para el resumen automatico, pero eso no se traslada como piso minimo a las notas de ejecucion mismas.",
+      "pregunta_critica": "¿FR-007 se satisface con notas de 1 caracter, o existe un minimo de palabras/caracteres para considerar la nota como evidencia real de trabajo realizado?",
+      "riesgo_si_no_se_corrige": "Tecnicos completan el campo con texto trivial ('ok', 'listo') solo para pasar la validacion, vaciando de contenido el registro de ejecucion y degradando la calidad de evidencia auditable.",
+      "severidad": "MEDIA"
+    },
+    {
+      "id": "H-006",
+      "categoria": "EDGE_CASE",
+      "rf_afectado": "N/A (ausente)",
+      "descripcion": "No existe ningun flujo ni estado de cancelacion de orden. Una orden en 'sin_asignar' o 'pendiente_de_revision' que el cliente ya no necesita (p.ej. problema resuelto por otra via) no tiene salida distinta de aprobada/rechazada.",
+      "pregunta_critica": "¿Que pasa si el cliente solicita cancelar una orden en sin_asignar antes de que un tecnico la ejecute? ¿Queda huerfana indefinidamente, o el dispatcher debe forzar un rechazo sin ejecucion previa (violando la premisa de FR-008 que exige pendiente_de_revision)?",
+      "riesgo_si_no_se_corrige": "Ordenes obsoletas se acumulan en sin_asignar/pendiente_de_revision sin mecanismo formal de cierre, contaminando metricas y forzando a soporte a usar rutas no especificadas (p.ej. rechazo manual en base de datos).",
+      "severidad": "ALTA"
+    },
+    {
+      "id": "H-007",
+      "categoria": "EDGE_CASE",
+      "rf_afectado": "FR-002, FR-005",
+      "descripcion": "No se especifica que ocurre con una orden ya asignada y en pendiente_de_revision (o incluso sin ejecutar aun) cuando el tecnico asignado es desactivado/dado de baja del sistema.",
+      "pregunta_critica": "Si un tecnico con ordenes 'sin_asignar->asignadas' pasa a inactivo, ¿el sistema reasigna automaticamente, notifica al dispatcher, o la orden queda bloqueada porque FR-002 solo permite reasignar en sin_asignar/pendiente_de_revision (no cubre 'asignada pero aun no ejecutada')?",
+      "riesgo_si_no_se_corrige": "Ordenes quedan asignadas a un tecnico inactivo sin ruta de recuperacion definida, generando trabajo bloqueado indefinidamente.",
+      "severidad": "ALTA"
+    },
+    {
+      "id": "H-008",
+      "categoria": "EDGE_CASE",
+      "rf_afectado": "FR-012",
+      "descripcion": "FR-012 (idempotencia) no define que pasa si el mismo idempotencyKey se reutiliza para un orderId o payload distinto (colision de clave), solo cubre el caso de reintento identico.",
+      "pregunta_critica": "¿Si un cliente/tecnico reutiliza (por bug de su app movil) el mismo idempotencyKey para dos ordenes distintas, el sistema responde con el resultado de la primera orden (dato incorrecto devuelto para la segunda), rechaza con 409, o genera un nuevo registro ignorando la colision?",
+      "riesgo_si_no_se_corrige": "Una colision de idempotencyKey podria devolver silenciosamente el resultado de una ejecucion de otra orden, corrompiendo la respuesta al cliente sin que el sistema lo detecte como error.",
+      "severidad": "ALTA"
+    },
+    {
+      "id": "H-009",
+      "categoria": "EDGE_CASE",
+      "rf_afectado": "FR-005, FR-009",
+      "descripcion": "No hay limite maximo de cantidad de fotos por envio de ejecucion, ni de tamano total agregado del envio (solo SC-003 fija 10MB por foto individual).",
+      "pregunta_critica": "¿Cuantas fotos como maximo puede adjuntar un tecnico en un solo envio de ejecucion, y cual es el tamano total maximo aceptado, antes de que el sistema rechace el envio por sobrecarga?",
+      "riesgo_si_no_se_corrige": "Un cliente malicioso o una app con bug podria adjuntar cientos de fotos de 10MB en un solo envio, generando un vector de denegacion de servicio (DoS) por consumo de ancho de banda/almacenamiento sin limite declarado.",
+      "severidad": "MEDIA"
+    },
+    {
+      "id": "H-010",
+      "categoria": "INCONSISTENCIA",
+      "rf_afectado": "FR-020 / SC-008",
+      "descripcion": "FR-020 usa 'SHOULD' (opcional, fase 2) para el resumen automatico, pero SC-008 lo mide como si fuera un criterio de exito obligatorio del sistema completo, sin condicionarlo a que la feature este habilitada.",
+      "pregunta_critica": "Si el resumen automatico (FR-020) no se implementa en esta iteracion por ser 'fase 2', ¿SC-008 se considera no aplicable, o el sistema falla el criterio de exito global por no tener esa capacidad?",
+      "riesgo_si_no_se_corrige": "Ambiguedad de alcance entre 'requisito opcional' y 'criterio de exito obligatorio' puede bloquear un release valido por un criterio que nunca debio ser bloqueante, o al contrario, dejar pasar una omision real de fallback ante fallo del servicio de resumen.",
+      "severidad": "MEDIA"
+    },
+    {
+      "id": "H-011",
+      "categoria": "EDGE_CASE",
+      "rf_afectado": "FR-013, FR-016",
+      "descripcion": "FR-016 cubre el caso de dos aprobaciones/rechazos identicos simultaneos (optimistic lock), pero no cubre explicitamente el caso donde un supervisor A aprueba y un supervisor B rechaza la misma orden casi al mismo tiempo (acciones opuestas, no identicas).",
+      "pregunta_critica": "Cuando supervisor A envia 'aprobar' y supervisor B envia 'rechazar' sobre la misma orden en pendiente_de_revision con milisegundos de diferencia, ¿cual gana, que respuesta HTTP exacta recibe el perdedor (409 generico vs. 409 con el estado final resultante), y queda ese conflicto reflejado en el audit log de forma distinguible de una operacion normal?",
+      "riesgo_si_no_se_corrige": "Comportamiento no determinista ante conflicto de decision humana opuesta (no solo tecnica), dejando al perdedor sin saber si su decision se aplico parcialmente o el motivo del rechazo se perdio.",
+      "severidad": "ALTA"
+    },
+    {
+      "id": "H-012",
+      "categoria": "TRAZABILIDAD",
+      "rf_afectado": "Edge Cases (parrafos narrativos sobre KMS, IdP, storage, audit-log)",
+      "descripcion": "Las respuestas a fallos de servicios externos (KMS, IdP, storage de fotos, servicio de auditoria, antivirus) se documentan solo como texto en la seccion de Edge Cases, sin FR-ID asociado ni escenario Given/When/Then formal, por lo que no son convertibles directamente en un test con nombre trazable.",
+      "pregunta_critica": "¿Que test file:test name verifica que, ante fallo del servicio de auditoria durante una aprobacion (FR-013), la transicion de estado se revierte completamente (rollback) en vez de aplicarse sin registro?",
+      "riesgo_si_no_se_corrige": "Incumplimiento directo del Principio III de la constitucion ('todo AC debe rastrearse hasta una prueba concreta'): estos comportamientos de fallo criticos quedan sin prueba de contrato, siendo justamente los casos de mayor riesgo de inconsistencia de datos.",
+      "severidad": "ALTA"
+    }
+  ],
+  "veredicto": "BLOQUEADA",
+  "resumen": "La especificacion cubre bien el ciclo de vida feliz de la orden (creacion, ejecucion, aprobacion/rechazo) pero degrada al convertir los NFR de seguridad y atomicidad de SPEC-v2 en simple narrativa de Edge Cases sin FR-ID ni test trazable, lo que viola el Principio I y III de la constitucion del proyecto. Ademas faltan reglas explicitas de rechazo cruzado de rol (escalada de privilegios) y flujos de estado para tecnicos inactivos y cancelacion de ordenes. Se requieren cambios antes de avanzar a /speckit-plan, priorizando H-001 y H-002 (bloqueantes)."
+}

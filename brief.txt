@@ -1,0 +1,9 @@
+Necesitamos que el técnico pueda registrar la ejecución de una orden y que el
+dispatcher pueda reasignarla si hace falta. Cuando el técnico envía la ejecución,
+debe adjuntar al menos una foto de evidencia. Luego el supervisor revisa y aprueba o
+rechaza. El usuario puede ver sus órdenes. Ah, y esto tiene que ser rápido y seguro,
+que manejamos datos de clientes. Sería ideal también tener un pequeño asistente que
+resuma la incidencia de cada orden a partir de las notas del técnico, para que el
+supervisor no tenga que leérselo todo. Y ya puestos, estaría genial un dashboard de
+métricas de productividad y notificaciones push a los técnicos… pero bueno, eso lo
+vemos.

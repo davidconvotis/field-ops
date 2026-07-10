@@ -1,0 +1,78 @@
+{
+  "total_problemas": 10,
+  "criticos": 0,
+  "altos": 5,
+  "medios": 5,
+  "problemas": [
+    {
+      "id": "ST-001",
+      "fragmento": "verificado atómicamente en escritura (no solo en lectura previa)",
+      "tipo": "REQUISITO_MEZCLADO_CON_SOLUCION",
+      "explicacion": "Aparece en FR-03b, FR-05, FR-06 y FR-08. 'Atómicamente' describe una técnica de implementación (lock/transacción), no el comportamiento observable. El requisito real testeable es 'ante dos operaciones concurrentes sobre la misma orden, exactamente una gana y la otra recibe 409' — eso sí es testeable sin mencionar cómo se logra.",
+      "severidad": "MEDIA"
+    },
+    {
+      "id": "ST-002",
+      "fragmento": "optimistic lock por versión o equivalente transaccional",
+      "tipo": "REQUISITO_MEZCLADO_CON_SOLUCION",
+      "explicacion": "NFR-05b nombra explícitamente una técnica de concurrencia (optimistic locking) dentro de un requisito no funcional. Un test no puede verificar 'se usó optimistic lock', solo puede verificar el resultado (409 en conflicto). Mezclar la solución obliga a la implementación a un patrón concreto sin justificarlo como requisito de negocio.",
+      "severidad": "ALTA"
+    },
+    {
+      "id": "ST-003",
+      "fragmento": "el sistema SHALL intentar generar un resumen automático en ≤5s (P95)",
+      "tipo": "CRITERIOS_DE_ACEPTACION_AUSENTES",
+      "explicacion": "FR-10 define métrica de latencia pero ningún criterio de aceptación sobre el contenido del resumen (¿qué longitud, qué campos debe cubrir, cuándo se considera 'correcto' o 'incompleto'?). Un test de latencia pasaría con un resumen vacío o sin sentido. Falta criterio de calidad/contenido, no solo de tiempo.",
+      "severidad": "ALTA"
+    },
+    {
+      "id": "ST-004",
+      "fragmento": "Recomendado: 404 Not Found uniforme para \"no existe o no tienes acceso\", sin distinguir los dos casos en el cuerpo de respuesta.",
+      "tipo": "CRITERIOS_DE_ACEPTACION_AUSENTES",
+      "explicacion": "Usa 'Recomendado' en vez de 'SHALL' — no es una obligación testeable, es una sugerencia. Un test de conformidad no puede fallar sobre una recomendación. NFR-03 queda sin comportamiento obligatorio fijado para el caso de enumeración (E-08).",
+      "severidad": "ALTA"
+    },
+    {
+      "id": "ST-005",
+      "fragmento": "sujeto a política de retención de datos de cliente vigente",
+      "tipo": "FRASE_NO_TESTEABLE",
+      "explicacion": "NFR-04b remite a un documento externo ('política vigente') que no está referenciado, versionado ni citado en la spec. No hay forma de escribir un test o criterio de aceptación contra un documento que no existe en el corpus de especificación.",
+      "severidad": "ALTA"
+    },
+    {
+      "id": "ST-006",
+      "fragmento": "timeout explícito configurado para el servicio de storage subyacente (no espera indefinida)",
+      "tipo": "CRITERIOS_DE_ACEPTACION_AUSENTES",
+      "explicacion": "NFR-06 exige un timeout 'explícito' pero no da el valor numérico. 'Explícito' sin cifra es un adjetivo sin métrica: cualquier timeout (1s o 300s) cumple la letra del requisito. No es testeable sin un número concreto.",
+      "severidad": "ALTA"
+    },
+    {
+      "id": "ST-007",
+      "fragmento": "Si la operación no es atómica a nivel de archivo individual, SHALL aplicar rollback all-or-nothing de las fotos ya subidas",
+      "tipo": "AUSENCIA_DE_EDGE_CASES",
+      "explicacion": "NFR-08b condiciona el comportamiento a una propiedad interna de la implementación ('si no es atómica') que la propia spec no define ni obliga. Deja abierto qué camino se toma en cada implementación concreta, por lo que dos implementaciones conformes pueden comportarse distinto ante el mismo edge case (C-06).",
+      "severidad": "MEDIA"
+    },
+    {
+      "id": "ST-008",
+      "fragmento": "permitir asignación de primer técnico en la misma operación o en operación separada",
+      "tipo": "CRITERIOS_DE_ACEPTACION_AUSENTES",
+      "explicacion": "FR-00 permite dos modos de operación sin definir cuándo se usa cada uno ni si el sistema debe soportar ambos simultáneamente. No hay criterio de aceptación que determine qué probar: un test no puede saber si 'orden creada sin técnico asignado' es un estado válido a verificar o un caso a rechazar.",
+      "severidad": "MEDIA"
+    },
+    {
+      "id": "ST-009",
+      "fragmento": "mínimo 12 meses (alineado con audit log), sujeto a política de retención de datos de cliente vigente. Pendiente de decisión de producto si excede 12 meses",
+      "tipo": "AUSENCIA_DE_EDGE_CASES",
+      "explicacion": "NFR-04b fija un mínimo pero no un máximo ni comportamiento de purga. Caso límite no cubierto: ¿qué pasa con las fotos después de 12 meses si nunca llega la 'decisión de producto'? Sin tope ni fecha de expiración por defecto, el sistema queda sin regla operable de facto (retención indefinida no declarada).",
+      "severidad": "MEDIA"
+    },
+    {
+      "id": "ST-010",
+      "fragmento": "Ante fallo o timeout del servicio externo de validación de token (IdP), el sistema SHALL responder 503",
+      "tipo": "CRITERIOS_DE_ACEPTACION_AUSENTES",
+      "explicacion": "NFR-09 no cuantifica el timeout que dispara la clasificación 'fallo del IdP' (¿1s? ¿10s?), ni define reintentos previos. Sin ese número, un test no puede distinguir de forma determinista si una respuesta lenta pero exitosa del IdP debía o no haber devuelto 503.",
+      "severidad": "MEDIA"
+    }
+  ]
+}
