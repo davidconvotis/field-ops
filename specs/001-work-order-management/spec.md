@@ -115,7 +115,7 @@ Al abrir una orden con notas de técnico registradas, el supervisor ve un resume
 
 - ¿Qué ocurre si un técnico intenta reenviar la ejecución de una orden ya `rechazada`? → Rechazada es terminal: no hay reenvío de ejecución tras rechazo (ver US1, escenario 5).
 - ¿Cómo maneja el sistema una reasignación concurrente donde dos dispatchers reasignan la misma orden casi simultáneamente? → Solo la primera transacción tiene efecto (check-and-set); ambos intentos quedan reflejados en el audit log aunque solo uno persista como estado final.
-- ¿Qué ocurre si el servicio de cifrado (KMS) falla al persistir datos de cliente o fotos? → La escritura completa falla (503); nunca se persiste en claro como fallback.
+- ¿Qué ocurre si el servicio de cifrado (KMS) falla al persistir fotos? → La escritura completa falla (503); nunca se persiste en claro como fallback.
 - ¿Qué ocurre si el validador externo de tokens (IdP) falla? → Se responde 503 (fallo de infraestructura), diferenciado explícitamente de 401 (token inválido), para no denegar acceso de forma engañosa.
 - ¿Qué ocurre si el servicio de almacenamiento de fotos falla o hace timeout durante la subida? → La ejecución no se marca `pendiente_de_revision` si la foto no confirmó persistencia; no se deja la orden en estado inconsistente (foto referenciada pero inexistente); se responde 503/502, o 504 si excede el timeout explícito configurado.
 - ¿Qué ocurre si el registro en el log de auditoría falla en el momento de un cambio de estado? → Se bloquea (rollback) la operación de cambio de estado completa (503); el cambio nunca se aplica sin su registro de auditoría correspondiente.
@@ -153,12 +153,12 @@ Al abrir una orden con notas de técnico registradas, el supervisor ve un resume
 ### Non-Functional Requirements
 
 - **NFR-01 (Seguridad — transporte)**: Todo tráfico cliente-servidor MUST usar TLS 1.2 o superior; conexiones sin TLS MUST ser rechazadas.
-- **NFR-02 (Seguridad — datos en reposo)**: Los datos de cliente (nombre, dirección, contacto) y las fotos de evidencia MUST estar cifrados en reposo con AES-256.
-- **NFR-02b**: WHEN el servicio de cifrado (KMS) falla al momento de persistir datos de cliente o fotos THE sistema MUST fallar la escritura completa (`503 Service Unavailable`). Nunca se persiste en claro como fallback.
+- **NFR-02 (Seguridad — datos en reposo)**: Las fotos de evidencia MUST estar cifradas en reposo con AES-256. (Los datos de identidad/contacto del cliente residen en el sistema de identidad externo asumido — Assumptions — y no se persisten localmente en este slice; por eso quedan fuera del alcance de este NFR.)
+- **NFR-02b**: WHEN el servicio de cifrado (KMS) falla al momento de persistir fotos THE sistema MUST fallar la escritura completa (`503 Service Unavailable`). Nunca se persiste en claro como fallback.
 - **NFR-03 (Seguridad — autorización)**: Cada endpoint MUST requerir autenticación válida y aplicar control de acceso por rol (técnico, dispatcher, supervisor, cliente); el 100% de los endpoints MUST rechazar peticiones sin token válido con `401`.
 - **NFR-03b**: El sistema MUST diferenciar "token inválido" (`401 Unauthorized`) de "fallo del validador externo de tokens" (`503 Service Unavailable`); un fallo del IdP externo no debe exponerse como `401`.
 - **NFR-04 (Auditoría)**: Todo cambio de estado de una orden (envío, reasignación, aprobación, rechazo) MUST quedar registrado en log de auditoría con actor, acción y timestamp, retención mínima 12 meses.
-- **NFR-04b**: El registro en audit log MUST ser atómico con el cambio de estado (todo-o-nada). WHEN el servicio de auditoría falla al momento de un cambio de estado THE sistema MUST bloquear (rollback) la operación completa (`503 Service Unavailable`); nunca se aplica un cambio de estado sin su registro de auditoría correspondiente. En reasignaciones o aprobaciones/rechazos concurrentes con condición de carrera legítima (ver FR-05b, FR-016b), AMBOS intentos MUST quedar reflejados en el audit log aunque solo uno persista como estado final.
+- **NFR-04b**: El registro en audit log MUST ser atómico con el cambio de estado (todo-o-nada). WHEN el servicio de auditoría falla al momento de un cambio de estado THE sistema MUST bloquear (rollback) la operación completa (`503 Service Unavailable`); nunca se aplica un cambio de estado sin su registro de auditoría correspondiente. En reasignaciones o aprobaciones/rechazos concurrentes con condición de carrera legítima (ver FR-003, FR-016b), AMBOS intentos MUST quedar reflejados en el audit log aunque solo uno persista como estado final.
 - **NFR-04c**: Las fotos de evidencia MUST tener retención de 12 meses, alineada con NFR-04, con borrado automático posterior.
 - **NFR-05 (Rendimiento — API)**: Operaciones CRUD sobre órdenes (excluyendo subida de fotos) MUST responder P95 ≤ 300 ms, P99 ≤ 800 ms bajo carga nominal (100 req/s).
 - **NFR-06 (Rendimiento — subida de evidencia)**: Subida de foto hasta 10 MB MUST completarse P95 ≤ 3 s con conexión de referencia 10 Mbps.
@@ -185,7 +185,7 @@ Al abrir una orden con notas de técnico registradas, el supervisor ve un resume
 - **SC-004**: El 100% de las transiciones de estado de una orden (envío, reasignación, aprobación, rechazo) queda registrado en el log de auditoría sin excepción, con retención mínima de 12 meses.
 - **SC-005**: El sistema mantiene disponibilidad mensual ≥ 99.5%.
 - **SC-006**: El 100% de los endpoints protegidos rechaza peticiones sin token válido con 401, y el 100% de las peticiones con token válido pero rol sin permiso se rechaza con 403.
-- **SC-007**: Cero incidentes de fuga de datos de cliente o fotos de evidencia en claro (sin cifrado) durante fallos del servicio de cifrado, verificado por auditoría.
+- **SC-007**: Cero incidentes de fuga de fotos de evidencia en claro (sin cifrado) durante fallos del servicio de cifrado, verificado por auditoría.
 - **SC-008**: El resumen automático de notas técnicas (cuando está habilitado) está disponible en P95 ≤ 5s o se degrada explícitamente sin bloquear al supervisor.
 
 ## Assumptions

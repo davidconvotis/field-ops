@@ -34,7 +34,7 @@ Todas las incógnitas de Technical Context quedan resueltas abajo. No quedan mar
 
 ## 6. Idempotencia y bloqueo optimista
 
-- **Decision**: `idempotencyKey` con índice único en la tabla `ExecutionRecord`; al recibir un envío se busca por key: si existe y el payload (hash de fotos+notas+orderId) coincide → se devuelve el resultado original (200); si existe con payload distinto → 409 (FR-012b). Transiciones de estado (`aprobada`/`rechazada`/reasignación) usan una columna `version` (optimistic lock): `UPDATE ... WHERE id=? AND status=? AND version=?`; 0 filas afectadas → 409 con el estado final real en el cuerpo (FR-016b, FR-05b).
+- **Decision**: `idempotencyKey` con índice único en la tabla `ExecutionRecord`; al recibir un envío se busca por key: si existe y el payload (hash de fotos+notas+orderId) coincide → se devuelve el resultado original (200); si existe con payload distinto → 409 (FR-012b). Transiciones de estado (`aprobada`/`rechazada`/reasignación) usan una columna `version` (optimistic lock): `UPDATE ... WHERE id=? AND status=? AND version=?`; 0 filas afectadas → 409 con el estado final real en el cuerpo (FR-016b, FR-003).
 - **Rationale**: Es el patrón estándar (similar a Stripe idempotency keys) para evitar duplicar registros ante reintentos de red, y el optimistic lock es la forma más simple y testeable de garantizar "solo la primera transacción tiene efecto" sin bloqueos pesimistas que degraden NFR-05 (P95 ≤ 300ms).
 - **Alternatives considered**: Locks pesimistas (`SELECT ... FOR UPDATE`) — rechazados por mayor riesgo de contención bajo carga nominal (100 req/s) sin beneficio adicional sobre optimistic lock para este volumen.
 

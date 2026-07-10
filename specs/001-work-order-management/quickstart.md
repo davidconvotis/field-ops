@@ -65,7 +65,7 @@ npm test
 ## Verificación de seguridad (NFR-01/02/02b/03/03b)
 
 - Confirmar que una conexión sin TLS es rechazada por el servidor (NFR-01).
-- Confirmar (con el adaptador de cifrado en modo "fallo simulado") que ninguna escritura de datos de cliente/fotos se persiste en claro — la operación responde `503` (NFR-02b).
+- Confirmar (con el adaptador de cifrado en modo "fallo simulado") que ninguna foto se persiste en claro — la operación responde `503` (NFR-02b).
 - Confirmar que un JWT expirado responde `401`, y que un fallo simulado del JWKS/IdP responde `503`, nunca `401` (NFR-03b).
 
 ## Definition of Done de este quickstart

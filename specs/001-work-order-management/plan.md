@@ -26,7 +26,7 @@ Sistema de gestión de órdenes de trabajo (FieldOps) con ciclo de vida `sin_asi
 
 **Performance Goals**: NFR-05 — P95 ≤ 300 ms / P99 ≤ 800 ms en CRUD de órdenes a 100 req/s; NFR-06 — subida de foto ≤10MB en P95 ≤ 3s a 10 Mbps; FR-020 — resumen IA P95 ≤ 5s con degradación explícita
 
-**Constraints**: TLS 1.2+ obligatorio (NFR-01); cifrado AES-256 en reposo para datos de cliente y fotos (NFR-02); fallo de KMS/IdP/storage/antivirus NUNCA degrada a inseguro — responde 503/502/504 explícito (NFR-02b/03b/06b/08b); todo cambio de estado es atómico con su registro de auditoría (NFR-04b); retención de fotos y audit log 12 meses con borrado automático (NFR-04c); RBAC en doble capa 401/403 en el 100% de endpoints (FR-000, NFR-03)
+**Constraints**: TLS 1.2+ obligatorio (NFR-01); cifrado AES-256 en reposo para fotos de evidencia (NFR-02 — no aplica a datos de cliente, que residen en el IdP externo fuera de alcance); fallo de KMS/IdP/storage/antivirus NUNCA degrada a inseguro — responde 503/502/504 explícito (NFR-02b/03b/06b/08b); todo cambio de estado es atómico con su registro de auditoría (NFR-04b); retención de fotos y audit log 12 meses con borrado automático (NFR-04c); RBAC en doble capa 401/403 en el 100% de endpoints (FR-000, NFR-03)
 
 **Scale/Scope**: 1 slice — 4 roles (cliente, técnico, dispatcher, supervisor), ~8 endpoints (crear orden, (re)asignar, activar/desactivar técnico, registrar ejecución, aprobar, rechazar, listar por rol, detalle+resumen), sin modelo de equipos/regiones, sin dashboard ni notificaciones push (fuera de alcance)
 
