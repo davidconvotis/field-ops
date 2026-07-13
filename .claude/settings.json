@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/speckit-autocommit.sh",
+            "timeout": 30,
+            "statusMessage": "speckit-autocommit: checking for changes to commit…"
+          }
+        ]
+      }
+    ]
+  }
+}
