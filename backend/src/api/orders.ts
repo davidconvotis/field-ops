@@ -79,6 +79,36 @@ router.get(
   },
 );
 
+// 003-dispatcher-orders-ui FR-023
+router.patch('/:orderId', authn, rbac(ROLES.DISPATCHER), async (req: AuthedRequest, res: Response, next: NextFunction) => {
+  try {
+    const order = await orderService.editClient({
+      orderId: req.params.orderId,
+      clientId: req.body.clientId,
+      expectedVersion: req.body.expectedVersion,
+      dispatcherId: req.user!.id,
+    });
+    res.status(200).json(order);
+  } catch (err) {
+    handleServiceError(err, res, next);
+  }
+});
+
+// 003-dispatcher-orders-ui FR-025/FR-026
+router.post('/:orderId/cancel', authn, rbac(ROLES.DISPATCHER), async (req: AuthedRequest, res: Response, next: NextFunction) => {
+  try {
+    const order = await orderService.cancelOrder({
+      orderId: req.params.orderId,
+      reason: req.body.reason,
+      expectedVersion: req.body.expectedVersion,
+      dispatcherId: req.user!.id,
+    });
+    res.status(200).json(order);
+  } catch (err) {
+    handleServiceError(err, res, next);
+  }
+});
+
 router.get(
   '/:orderId',
   authn,

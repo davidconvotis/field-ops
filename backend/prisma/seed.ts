@@ -39,6 +39,22 @@ async function main(): Promise<void> {
     ),
   );
 
+  // 003-dispatcher-orders-ui quickstart.md Escenario 9: clientes de prueba con
+  // nombres/emails claramente distintos para validar la búsqueda (US5) manualmente.
+  await Promise.all(
+    [
+      { nombre: 'Ana Buscable Torres', email: 'ana-buscable@fieldops.dev' },
+      { nombre: 'Bruno Localizable Diaz', email: 'bruno-localizable@fieldops.dev' },
+      { nombre: 'Carla Encontrable Ruiz', email: 'carla-encontrable@fieldops.dev' },
+    ].map((data) =>
+      prisma.user.upsert({
+        where: { email: data.email },
+        update: {},
+        create: { role: ROLES.CLIENTE, nombre: data.nombre, email: data.email, passwordHash },
+      }),
+    ),
+  );
+
   const existingOrders: number = await prisma.order.count();
   if (existingOrders < 55) {
     await Promise.all(

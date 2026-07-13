@@ -3446,6 +3446,7 @@ export namespace Prisma {
     technicianId: string | null
     version: number | null
     rejectionReason: string | null
+    cancellationReason: string | null
     resolvedByUserId: string | null
     createdAt: Date | null
     assignedAt: Date | null
@@ -3460,6 +3461,7 @@ export namespace Prisma {
     technicianId: string | null
     version: number | null
     rejectionReason: string | null
+    cancellationReason: string | null
     resolvedByUserId: string | null
     createdAt: Date | null
     assignedAt: Date | null
@@ -3474,6 +3476,7 @@ export namespace Prisma {
     technicianId: number
     version: number
     rejectionReason: number
+    cancellationReason: number
     resolvedByUserId: number
     createdAt: number
     assignedAt: number
@@ -3498,6 +3501,7 @@ export namespace Prisma {
     technicianId?: true
     version?: true
     rejectionReason?: true
+    cancellationReason?: true
     resolvedByUserId?: true
     createdAt?: true
     assignedAt?: true
@@ -3512,6 +3516,7 @@ export namespace Prisma {
     technicianId?: true
     version?: true
     rejectionReason?: true
+    cancellationReason?: true
     resolvedByUserId?: true
     createdAt?: true
     assignedAt?: true
@@ -3526,6 +3531,7 @@ export namespace Prisma {
     technicianId?: true
     version?: true
     rejectionReason?: true
+    cancellationReason?: true
     resolvedByUserId?: true
     createdAt?: true
     assignedAt?: true
@@ -3627,6 +3633,7 @@ export namespace Prisma {
     technicianId: string | null
     version: number
     rejectionReason: string | null
+    cancellationReason: string | null
     resolvedByUserId: string | null
     createdAt: Date
     assignedAt: Date | null
@@ -3660,6 +3667,7 @@ export namespace Prisma {
     technicianId?: boolean
     version?: boolean
     rejectionReason?: boolean
+    cancellationReason?: boolean
     resolvedByUserId?: boolean
     createdAt?: boolean
     assignedAt?: boolean
@@ -3680,6 +3688,7 @@ export namespace Prisma {
     technicianId?: boolean
     version?: boolean
     rejectionReason?: boolean
+    cancellationReason?: boolean
     resolvedByUserId?: boolean
     createdAt?: boolean
     assignedAt?: boolean
@@ -3697,6 +3706,7 @@ export namespace Prisma {
     technicianId?: boolean
     version?: boolean
     rejectionReason?: boolean
+    cancellationReason?: boolean
     resolvedByUserId?: boolean
     createdAt?: boolean
     assignedAt?: boolean
@@ -3734,6 +3744,7 @@ export namespace Prisma {
       technicianId: string | null
       version: number
       rejectionReason: string | null
+      cancellationReason: string | null
       resolvedByUserId: string | null
       createdAt: Date
       assignedAt: Date | null
@@ -4143,6 +4154,7 @@ export namespace Prisma {
     readonly technicianId: FieldRef<"Order", 'String'>
     readonly version: FieldRef<"Order", 'Int'>
     readonly rejectionReason: FieldRef<"Order", 'String'>
+    readonly cancellationReason: FieldRef<"Order", 'String'>
     readonly resolvedByUserId: FieldRef<"Order", 'String'>
     readonly createdAt: FieldRef<"Order", 'DateTime'>
     readonly assignedAt: FieldRef<"Order", 'DateTime'>
@@ -7521,6 +7533,7 @@ export namespace Prisma {
     technicianId: 'technicianId',
     version: 'version',
     rejectionReason: 'rejectionReason',
+    cancellationReason: 'cancellationReason',
     resolvedByUserId: 'resolvedByUserId',
     createdAt: 'createdAt',
     assignedAt: 'assignedAt',
@@ -7769,6 +7782,7 @@ export namespace Prisma {
     technicianId?: StringNullableFilter<"Order"> | string | null
     version?: IntFilter<"Order"> | number
     rejectionReason?: StringNullableFilter<"Order"> | string | null
+    cancellationReason?: StringNullableFilter<"Order"> | string | null
     resolvedByUserId?: StringNullableFilter<"Order"> | string | null
     createdAt?: DateTimeFilter<"Order"> | Date | string
     assignedAt?: DateTimeNullableFilter<"Order"> | Date | string | null
@@ -7788,6 +7802,7 @@ export namespace Prisma {
     technicianId?: SortOrderInput | SortOrder
     version?: SortOrder
     rejectionReason?: SortOrderInput | SortOrder
+    cancellationReason?: SortOrderInput | SortOrder
     resolvedByUserId?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     assignedAt?: SortOrderInput | SortOrder
@@ -7810,6 +7825,7 @@ export namespace Prisma {
     technicianId?: StringNullableFilter<"Order"> | string | null
     version?: IntFilter<"Order"> | number
     rejectionReason?: StringNullableFilter<"Order"> | string | null
+    cancellationReason?: StringNullableFilter<"Order"> | string | null
     resolvedByUserId?: StringNullableFilter<"Order"> | string | null
     createdAt?: DateTimeFilter<"Order"> | Date | string
     assignedAt?: DateTimeNullableFilter<"Order"> | Date | string | null
@@ -7829,6 +7845,7 @@ export namespace Prisma {
     technicianId?: SortOrderInput | SortOrder
     version?: SortOrder
     rejectionReason?: SortOrderInput | SortOrder
+    cancellationReason?: SortOrderInput | SortOrder
     resolvedByUserId?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     assignedAt?: SortOrderInput | SortOrder
@@ -7851,6 +7868,7 @@ export namespace Prisma {
     technicianId?: StringNullableWithAggregatesFilter<"Order"> | string | null
     version?: IntWithAggregatesFilter<"Order"> | number
     rejectionReason?: StringNullableWithAggregatesFilter<"Order"> | string | null
+    cancellationReason?: StringNullableWithAggregatesFilter<"Order"> | string | null
     resolvedByUserId?: StringNullableWithAggregatesFilter<"Order"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"Order"> | Date | string
     assignedAt?: DateTimeNullableWithAggregatesFilter<"Order"> | Date | string | null
@@ -8211,6 +8229,7 @@ export namespace Prisma {
     status?: string
     version?: number
     rejectionReason?: string | null
+    cancellationReason?: string | null
     createdAt?: Date | string
     assignedAt?: Date | string | null
     submittedAt?: Date | string | null
@@ -8229,6 +8248,7 @@ export namespace Prisma {
     technicianId?: string | null
     version?: number
     rejectionReason?: string | null
+    cancellationReason?: string | null
     resolvedByUserId?: string | null
     createdAt?: Date | string
     assignedAt?: Date | string | null
@@ -8243,6 +8263,7 @@ export namespace Prisma {
     status?: StringFieldUpdateOperationsInput | string
     version?: IntFieldUpdateOperationsInput | number
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     submittedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -8261,6 +8282,7 @@ export namespace Prisma {
     technicianId?: NullableStringFieldUpdateOperationsInput | string | null
     version?: IntFieldUpdateOperationsInput | number
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     resolvedByUserId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -8277,6 +8299,7 @@ export namespace Prisma {
     technicianId?: string | null
     version?: number
     rejectionReason?: string | null
+    cancellationReason?: string | null
     resolvedByUserId?: string | null
     createdAt?: Date | string
     assignedAt?: Date | string | null
@@ -8289,6 +8312,7 @@ export namespace Prisma {
     status?: StringFieldUpdateOperationsInput | string
     version?: IntFieldUpdateOperationsInput | number
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     submittedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -8302,6 +8326,7 @@ export namespace Prisma {
     technicianId?: NullableStringFieldUpdateOperationsInput | string | null
     version?: IntFieldUpdateOperationsInput | number
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     resolvedByUserId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -8741,6 +8766,7 @@ export namespace Prisma {
     technicianId?: SortOrder
     version?: SortOrder
     rejectionReason?: SortOrder
+    cancellationReason?: SortOrder
     resolvedByUserId?: SortOrder
     createdAt?: SortOrder
     assignedAt?: SortOrder
@@ -8759,6 +8785,7 @@ export namespace Prisma {
     technicianId?: SortOrder
     version?: SortOrder
     rejectionReason?: SortOrder
+    cancellationReason?: SortOrder
     resolvedByUserId?: SortOrder
     createdAt?: SortOrder
     assignedAt?: SortOrder
@@ -8773,6 +8800,7 @@ export namespace Prisma {
     technicianId?: SortOrder
     version?: SortOrder
     rejectionReason?: SortOrder
+    cancellationReason?: SortOrder
     resolvedByUserId?: SortOrder
     createdAt?: SortOrder
     assignedAt?: SortOrder
@@ -9654,6 +9682,7 @@ export namespace Prisma {
     status?: string
     version?: number
     rejectionReason?: string | null
+    cancellationReason?: string | null
     createdAt?: Date | string
     assignedAt?: Date | string | null
     submittedAt?: Date | string | null
@@ -9670,6 +9699,7 @@ export namespace Prisma {
     technicianId?: string | null
     version?: number
     rejectionReason?: string | null
+    cancellationReason?: string | null
     resolvedByUserId?: string | null
     createdAt?: Date | string
     assignedAt?: Date | string | null
@@ -9693,6 +9723,7 @@ export namespace Prisma {
     status?: string
     version?: number
     rejectionReason?: string | null
+    cancellationReason?: string | null
     createdAt?: Date | string
     assignedAt?: Date | string | null
     submittedAt?: Date | string | null
@@ -9709,6 +9740,7 @@ export namespace Prisma {
     clientId: string
     version?: number
     rejectionReason?: string | null
+    cancellationReason?: string | null
     resolvedByUserId?: string | null
     createdAt?: Date | string
     assignedAt?: Date | string | null
@@ -9788,6 +9820,7 @@ export namespace Prisma {
     status?: string
     version?: number
     rejectionReason?: string | null
+    cancellationReason?: string | null
     createdAt?: Date | string
     assignedAt?: Date | string | null
     submittedAt?: Date | string | null
@@ -9805,6 +9838,7 @@ export namespace Prisma {
     technicianId?: string | null
     version?: number
     rejectionReason?: string | null
+    cancellationReason?: string | null
     createdAt?: Date | string
     assignedAt?: Date | string | null
     submittedAt?: Date | string | null
@@ -9869,6 +9903,7 @@ export namespace Prisma {
     technicianId?: StringNullableFilter<"Order"> | string | null
     version?: IntFilter<"Order"> | number
     rejectionReason?: StringNullableFilter<"Order"> | string | null
+    cancellationReason?: StringNullableFilter<"Order"> | string | null
     resolvedByUserId?: StringNullableFilter<"Order"> | string | null
     createdAt?: DateTimeFilter<"Order"> | Date | string
     assignedAt?: DateTimeNullableFilter<"Order"> | Date | string | null
@@ -10400,6 +10435,7 @@ export namespace Prisma {
     status?: string
     version?: number
     rejectionReason?: string | null
+    cancellationReason?: string | null
     createdAt?: Date | string
     assignedAt?: Date | string | null
     submittedAt?: Date | string | null
@@ -10417,6 +10453,7 @@ export namespace Prisma {
     technicianId?: string | null
     version?: number
     rejectionReason?: string | null
+    cancellationReason?: string | null
     resolvedByUserId?: string | null
     createdAt?: Date | string
     assignedAt?: Date | string | null
@@ -10508,6 +10545,7 @@ export namespace Prisma {
     status?: StringFieldUpdateOperationsInput | string
     version?: IntFieldUpdateOperationsInput | number
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     submittedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -10525,6 +10563,7 @@ export namespace Prisma {
     technicianId?: NullableStringFieldUpdateOperationsInput | string | null
     version?: IntFieldUpdateOperationsInput | number
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     resolvedByUserId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -10664,6 +10703,7 @@ export namespace Prisma {
     status?: string
     version?: number
     rejectionReason?: string | null
+    cancellationReason?: string | null
     createdAt?: Date | string
     assignedAt?: Date | string | null
     submittedAt?: Date | string | null
@@ -10681,6 +10721,7 @@ export namespace Prisma {
     technicianId?: string | null
     version?: number
     rejectionReason?: string | null
+    cancellationReason?: string | null
     resolvedByUserId?: string | null
     createdAt?: Date | string
     assignedAt?: Date | string | null
@@ -10745,6 +10786,7 @@ export namespace Prisma {
     status?: StringFieldUpdateOperationsInput | string
     version?: IntFieldUpdateOperationsInput | number
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     submittedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -10762,6 +10804,7 @@ export namespace Prisma {
     technicianId?: NullableStringFieldUpdateOperationsInput | string | null
     version?: IntFieldUpdateOperationsInput | number
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     resolvedByUserId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -10817,6 +10860,7 @@ export namespace Prisma {
     technicianId?: string | null
     version?: number
     rejectionReason?: string | null
+    cancellationReason?: string | null
     resolvedByUserId?: string | null
     createdAt?: Date | string
     assignedAt?: Date | string | null
@@ -10830,6 +10874,7 @@ export namespace Prisma {
     clientId: string
     version?: number
     rejectionReason?: string | null
+    cancellationReason?: string | null
     resolvedByUserId?: string | null
     createdAt?: Date | string
     assignedAt?: Date | string | null
@@ -10862,6 +10907,7 @@ export namespace Prisma {
     technicianId?: string | null
     version?: number
     rejectionReason?: string | null
+    cancellationReason?: string | null
     createdAt?: Date | string
     assignedAt?: Date | string | null
     submittedAt?: Date | string | null
@@ -10879,6 +10925,7 @@ export namespace Prisma {
     status?: StringFieldUpdateOperationsInput | string
     version?: IntFieldUpdateOperationsInput | number
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     submittedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -10895,6 +10942,7 @@ export namespace Prisma {
     technicianId?: NullableStringFieldUpdateOperationsInput | string | null
     version?: IntFieldUpdateOperationsInput | number
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     resolvedByUserId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -10910,6 +10958,7 @@ export namespace Prisma {
     technicianId?: NullableStringFieldUpdateOperationsInput | string | null
     version?: IntFieldUpdateOperationsInput | number
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     resolvedByUserId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -10922,6 +10971,7 @@ export namespace Prisma {
     status?: StringFieldUpdateOperationsInput | string
     version?: IntFieldUpdateOperationsInput | number
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     submittedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -10938,6 +10988,7 @@ export namespace Prisma {
     clientId?: StringFieldUpdateOperationsInput | string
     version?: IntFieldUpdateOperationsInput | number
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     resolvedByUserId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -10953,6 +11004,7 @@ export namespace Prisma {
     clientId?: StringFieldUpdateOperationsInput | string
     version?: IntFieldUpdateOperationsInput | number
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     resolvedByUserId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -11021,6 +11073,7 @@ export namespace Prisma {
     status?: StringFieldUpdateOperationsInput | string
     version?: IntFieldUpdateOperationsInput | number
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     submittedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -11038,6 +11091,7 @@ export namespace Prisma {
     technicianId?: NullableStringFieldUpdateOperationsInput | string | null
     version?: IntFieldUpdateOperationsInput | number
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     submittedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -11053,6 +11107,7 @@ export namespace Prisma {
     technicianId?: NullableStringFieldUpdateOperationsInput | string | null
     version?: IntFieldUpdateOperationsInput | number
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     submittedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null

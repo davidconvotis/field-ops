@@ -8,6 +8,9 @@ info:
     aprobación/rechazo, y listado por rol. Ver /specs/001-work-order-management/spec.md para
     los requisitos funcionales y no funcionales completos (FR-000..FR-020, NFR-01..NFR-08b).
     Incluye además login/refresh/logout (ver /specs/002-login-rbac/spec.md, FR-001..FR-010).
+    Incluye además panel de dispatcher (listado/filtro/paginación de órdenes y técnicos,
+    CRUD de clientes/técnicos, búsqueda de clientes, edición/cancelación de orden — ver
+    /specs/003-dispatcher-orders-ui/spec.md, FR-001..FR-026).
 
 servers:
   - url: /api/v1
@@ -159,6 +162,61 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '503': { $ref: '#/components/responses/ServiceUnavailable' }
+    post:
+      operationId: createTechnician
+      summary: Crear un nuevo técnico (003-dispatcher-orders-ui FR-019) — rol dispatcher
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nombre, email]
+              properties:
+                nombre: { type: string }
+                email: { type: string, format: email }
+      responses:
+        '201':
+          description: Técnico creado, activo por defecto
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TechnicianSummary' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409':
+          description: email ya registrado por otro usuario (FR-018, research.md §8)
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
+  /technicians/{technicianId}:
+    patch:
+      operationId: updateTechnician
+      summary: Editar nombre/email de un técnico existente (003-dispatcher-orders-ui FR-020) — rol dispatcher
+      parameters:
+        - name: technicianId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nombre: { type: string }
+                email: { type: string, format: email }
+      responses:
+        '200':
+          description: Técnico actualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TechnicianSummary' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: email ya registrado por otro usuario (FR-018, research.md §8)
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
 
   /orders/{orderId}:
     parameters:
@@ -179,6 +237,36 @@ paths:
           description: Rol sin acceso potencial a este tipo de orden (FR-019, 403 uniforme, no filtra existencia)
         '404':
           description: No existe, o rol tiene acceso potencial a la ruta pero no a esta orden (FR-019)
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+    patch:
+      operationId: editOrderClient
+      summary: Editar el cliente asociado a una orden (003-dispatcher-orders-ui FR-023) — rol dispatcher
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [clientId, expectedVersion]
+              properties:
+                clientId: { type: string, format: uuid }
+                expectedVersion:
+                  type: integer
+                  description: version leída previamente, para chequeo atómico (mismo mecanismo que /assign)
+      responses:
+        '200':
+          description: Cliente actualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Order' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: orderId o clientId inexistente
+        '409':
+          description: Orden transicionó a estado terminal entre lectura e intento (mismo mecanismo que FR-05b)
+        '422':
+          description: Orden en estado terminal (FR-024), o clientId no corresponde a un usuario con rol cliente
         '503': { $ref: '#/components/responses/ServiceUnavailable' }
 
   /orders/{orderId}/assign:
@@ -212,6 +300,161 @@ paths:
           description: Orden transicionó a estado terminal entre lectura e intento (FR-05b), o técnico ya no está activo
         '422':
           description: Orden en estado terminal (FR-003), o technicianId inexistente/inactivo (FR-004)
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
+  /orders/{orderId}/cancel:
+    post:
+      operationId: cancelOrder
+      summary: >
+        Cancelar una orden en estado no terminal (003-dispatcher-orders-ui FR-025/FR-026)
+        — rol dispatcher. Nuevo estado terminal `cancelada`.
+      parameters:
+        - $ref: '#/components/parameters/OrderId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason, expectedVersion]
+              properties:
+                reason: { type: string, description: Motivo obligatorio, no vacío tras trim (FR-025) }
+                expectedVersion:
+                  type: integer
+                  description: version leída previamente, para chequeo atómico (mismo mecanismo que /assign)
+      responses:
+        '200':
+          description: Orden cancelada — status=cancelada, cancellationReason/resolvedByUserId/resolvedAt registrados
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Order' }
+        '400':
+          description: reason ausente o vacío/solo espacios (FR-025)
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Orden transicionó a estado terminal entre lectura e intento (mismo mecanismo que FR-05b)
+        '422':
+          description: Orden ya en estado terminal (FR-024/FR-026)
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
+  /clients:
+    get:
+      operationId: searchClients
+      summary: >
+        Buscar/listar clientes por cualquier campo (003-dispatcher-orders-ui FR-021,
+        research.md §6) — rol dispatcher. Sin `q`, listado completo paginado (FR-011-análogo para clientes).
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema: { type: string }
+          description: Texto libre — coincidencia parcial sobre nombre/email, igualdad exacta si tiene forma de uuid sobre id
+        - name: page
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: pageSize
+          in: query
+          required: false
+          schema: { type: integer, default: 50 }
+          description: Tamaño fijo de página (FR-014) — el valor enviado por el cliente se ignora, siempre 50
+      responses:
+        '200':
+          description: Listado paginado de usuarios con rol cliente
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaginatedClients' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+    post:
+      operationId: createClient
+      summary: Crear un nuevo cliente (003-dispatcher-orders-ui FR-015) — rol dispatcher
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nombre, email]
+              properties:
+                nombre: { type: string }
+                email: { type: string, format: email }
+      responses:
+        '201':
+          description: Cliente creado, activo por defecto
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ClientSummary' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409':
+          description: email ya registrado por otro usuario (FR-018, research.md §8)
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
+  /clients/{clientId}:
+    patch:
+      operationId: updateClient
+      summary: Editar nombre/email de un cliente existente (003-dispatcher-orders-ui FR-016) — rol dispatcher
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nombre: { type: string }
+                email: { type: string, format: email }
+      responses:
+        '200':
+          description: Cliente actualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ClientSummary' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: email ya registrado por otro usuario (FR-018, research.md §8)
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
+  /clients/{clientId}/activo:
+    patch:
+      operationId: setClientActive
+      summary: >
+        Dar de baja/reactivar un cliente (003-dispatcher-orders-ui FR-017) — rol dispatcher.
+        SIEMPRE baja lógica, nunca borrado físico (clarify ronda 2). No afecta órdenes existentes
+        del cliente (a diferencia de la baja de técnico, FR-004d de 001).
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [activo]
+              properties:
+                activo: { type: boolean }
+      responses:
+        '200':
+          description: Estado actualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ClientSummary' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '503': { $ref: '#/components/responses/ServiceUnavailable' }
 
   /technicians/{technicianId}/activo:
@@ -388,7 +631,7 @@ components:
   schemas:
     OrderStatus:
       type: string
-      enum: [sin_asignar, pendiente_de_revision, aprobada, rechazada]
+      enum: [sin_asignar, pendiente_de_revision, aprobada, rechazada, cancelada]
 
     Order:
       type: object
@@ -399,6 +642,7 @@ components:
         technicianId: { type: string, format: uuid, nullable: true }
         version: { type: integer }
         rejectionReason: { type: string, nullable: true }
+        cancellationReason: { type: string, nullable: true, description: Motivo de cancelación (003 FR-025), solo si status=cancelada }
         createdAt: { type: string, format: date-time }
         assignedAt: { type: string, format: date-time, nullable: true }
         submittedAt: { type: string, format: date-time, nullable: true }
@@ -438,6 +682,25 @@ components:
         items:
           type: array
           items: { $ref: '#/components/schemas/TechnicianSummary' }
+        page: { type: integer }
+        pageSize: { type: integer }
+        total: { type: integer }
+
+    ClientSummary:
+      description: Usuario rol cliente (003-dispatcher-orders-ui FR-015..FR-017, FR-021)
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        nombre: { type: string }
+        email: { type: string, format: email }
+        activo: { type: boolean }
+
+    PaginatedClients:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/ClientSummary' }
         page: { type: integer }
         pageSize: { type: integer }
         total: { type: integer }

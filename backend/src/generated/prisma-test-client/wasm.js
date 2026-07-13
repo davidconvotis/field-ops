@@ -143,6 +143,7 @@ exports.Prisma.OrderScalarFieldEnum = {
   technicianId: 'technicianId',
   version: 'version',
   rejectionReason: 'rejectionReason',
+  cancellationReason: 'cancellationReason',
   resolvedByUserId: 'resolvedByUserId',
   createdAt: 'createdAt',
   assignedAt: 'assignedAt',

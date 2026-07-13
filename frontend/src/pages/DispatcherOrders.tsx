@@ -1,7 +1,9 @@
 import { useCallback, useState } from 'react';
-import { listOrders, createOrder, assignOrder, ApiError } from '../services/api';
+import { useNavigate } from 'react-router-dom';
+import { listOrders, createOrder, assignOrder, editOrderClient, cancelOrder, ApiError } from '../services/api';
 import TechnicianAssignSelect from '../components/TechnicianAssignSelect';
 import ReassignConfirmModal from '../components/ReassignConfirmModal';
+import ClientSearchSelect from '../components/ClientSearchSelect';
 
 interface Order {
   id: string;
@@ -38,7 +40,7 @@ const STATUS_LABEL: Record<string, string> = {
   aprobada: 'aprobada',
   rechazada: 'rechazada',
 };
-const TERMINAL_STATUSES = ['aprobada', 'rechazada'];
+const TERMINAL_STATUSES = ['aprobada', 'rechazada', 'cancelada'];
 
 export default function DispatcherOrders() {
   const [result, setResult] = useState<OrdersResult | null>(null);
@@ -49,6 +51,10 @@ export default function DispatcherOrders() {
   const [page, setPage] = useState(1);
   const [pendingReassign, setPendingReassign] = useState<PendingReassign | null>(null); // { order, newTechnicianId }
   const [newClientId, setNewClientId] = useState('');
+  const [editingClientOrderId, setEditingClientOrderId] = useState<string | null>(null);
+  const [cancelingOrderId, setCancelingOrderId] = useState<string | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const navigate = useNavigate();
 
   const fetchOrders = useCallback(
     async (opts: FetchOrdersOpts = {}) => {
@@ -92,6 +98,7 @@ export default function DispatcherOrders() {
 
   async function handleCreateOrder(e: React.FormEvent) {
     e.preventDefault();
+    if (!newClientId) return;
     try {
       await createOrder(newClientId);
       setNewClientId('');
@@ -99,6 +106,10 @@ export default function DispatcherOrders() {
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Error inesperado');
     }
+  }
+
+  function handleCreateNewClient() {
+    navigate('/dispatcher/clients');
   }
 
   function handleAssignSelected(order: Order, selectedTechnicianId: string) {
@@ -130,21 +141,65 @@ export default function DispatcherOrders() {
     setPendingReassign(null);
   }
 
+  // FR-023
+  async function handleEditClientSelected(order: Order, clientId: string) {
+    try {
+      await editOrderClient(order.id, { clientId, expectedVersion: order.version });
+      setEditingClientOrderId(null);
+      await fetchOrders();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Error inesperado');
+    }
+  }
+
+  function handleStartCancel(orderId: string) {
+    setCancelingOrderId(orderId);
+    setCancelReason('');
+  }
+
+  // FR-025
+  async function handleConfirmCancel(order: Order) {
+    if (!cancelReason.trim()) return;
+    try {
+      await cancelOrder(order.id, { reason: cancelReason, expectedVersion: order.version });
+      setCancelingOrderId(null);
+      setCancelReason('');
+      await fetchOrders();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Error inesperado');
+    }
+  }
+
+  function handleCancelCancel() {
+    setCancelingOrderId(null);
+    setCancelReason('');
+  }
+
   return (
     <div className="space-y-6 p-6">
       <h2 className="text-2xl font-semibold text-slate-800">Órdenes</h2>
 
-      <form onSubmit={handleCreateOrder} className="flex items-end gap-3 rounded-lg bg-white p-4 shadow-sm">
-        <label className="block text-sm text-slate-600">
-          Nueva orden — Cliente ID
-          <input
-            value={newClientId}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewClientId(e.target.value)}
-            required
-            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
-          />
-        </label>
-        <button type="submit" className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
+      <form onSubmit={handleCreateOrder} className="space-y-3 rounded-lg bg-white p-4 shadow-sm">
+        <p className="text-sm font-medium text-slate-700">Nueva orden — buscar cliente</p>
+        {newClientId ? (
+          <div className="flex items-center justify-between rounded-md bg-slate-50 px-3 py-2 text-sm">
+            <span>Cliente seleccionado: {newClientId}</span>
+            <button
+              type="button"
+              onClick={() => setNewClientId('')}
+              className="text-xs text-slate-500 underline hover:text-slate-700"
+            >
+              cambiar
+            </button>
+          </div>
+        ) : (
+          <ClientSearchSelect onSelect={setNewClientId} onCreateNew={handleCreateNewClient} />
+        )}
+        <button
+          type="submit"
+          disabled={!newClientId}
+          className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+        >
           Crear orden
         </button>
       </form>
@@ -212,6 +267,7 @@ export default function DispatcherOrders() {
                 <th className="p-3">Técnico</th>
                 <th className="p-3">Creada</th>
                 <th className="p-3">Asignar</th>
+                <th className="p-3">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -227,6 +283,58 @@ export default function DispatcherOrders() {
                       <span className="text-xs text-slate-400">no asignable</span>
                     ) : (
                       <TechnicianAssignSelect onSelect={(techId: string) => handleAssignSelected(order, techId)} />
+                    )}
+                  </td>
+                  <td className="p-3 min-w-[220px] space-y-2">
+                    {TERMINAL_STATUSES.includes(order.status) ? (
+                      <span className="text-xs text-slate-400">no editable</span>
+                    ) : cancelingOrderId === order.id ? (
+                      <div className="space-y-1">
+                        <label className="block text-xs text-slate-600">
+                          Motivo de cancelación
+                          <textarea
+                            value={cancelReason}
+                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setCancelReason(e.target.value)}
+                            className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-xs"
+                          />
+                        </label>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            disabled={!cancelReason.trim()}
+                            onClick={() => handleConfirmCancel(order)}
+                            className="rounded-md bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-700 disabled:opacity-50"
+                          >
+                            Confirmar cancelación
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleCancelCancel}
+                            className="rounded-md bg-slate-200 px-2 py-1 text-xs hover:bg-slate-300"
+                          >
+                            Volver
+                          </button>
+                        </div>
+                      </div>
+                    ) : editingClientOrderId === order.id ? (
+                      <ClientSearchSelect onSelect={(clientId: string) => handleEditClientSelected(order, clientId)} />
+                    ) : (
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setEditingClientOrderId(order.id)}
+                          className="rounded-md bg-slate-200 px-2 py-1 text-xs hover:bg-slate-300"
+                        >
+                          Editar cliente
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleStartCancel(order.id)}
+                          className="rounded-md bg-slate-200 px-2 py-1 text-xs hover:bg-slate-300"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
                     )}
                   </td>
                 </tr>

@@ -1,36 +1,36 @@
 import { useCallback, useState } from 'react';
-import { listTechnicians, setTechnicianActive, createTechnician, updateTechnician, ApiError } from '../services/api';
+import { searchClients, createClient, updateClient, setClientActive, ApiError } from '../services/api';
 
-interface Technician {
+interface Client {
   id: string;
   nombre?: string;
+  email?: string;
   activo: boolean;
-  activeOrderCount?: number;
   [key: string]: unknown;
 }
 
-interface TechniciansResult {
-  items: Technician[];
+interface ClientsResult {
+  items: Client[];
   page: number;
   total: number;
   pageSize: number;
 }
 
-// FR-011/FR-012/FR-013/FR-014: listado paginado de técnicos con estado y
-// cantidad de órdenes activas asignadas.
-export default function DispatcherTechnicians() {
-  const [result, setResult] = useState<TechniciansResult | null>(null);
+// FR-015..FR-017: CRUD de clientes (crear/editar/baja lógica).
+export default function DispatcherClients() {
+  const [result, setResult] = useState<ClientsResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editNombre, setEditNombre] = useState('');
+  const [editEmail, setEditEmail] = useState('');
 
-  const fetchTechnicians = useCallback(async (nextPage = page) => {
+  const fetchClients = useCallback(async (nextPage = page) => {
     setError(null);
     try {
-      const data = await listTechnicians({ page: nextPage });
+      const data = await searchClients({ page: nextPage });
       setResult(data);
       setPage(nextPage);
     } catch (err) {
@@ -41,40 +41,41 @@ export default function DispatcherTechnicians() {
   const [initialized, setInitialized] = useState(false);
   if (!initialized) {
     setInitialized(true);
-    fetchTechnicians(1);
-  }
-
-  async function handleToggleActive(technicianId: string, activo: boolean) {
-    try {
-      await setTechnicianActive(technicianId, activo);
-      await fetchTechnicians();
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Error inesperado');
-    }
+    fetchClients(1);
   }
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     try {
-      await createTechnician({ nombre, email });
+      await createClient({ nombre, email });
       setNombre('');
       setEmail('');
-      await fetchTechnicians(1);
+      await fetchClients(1);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Error inesperado');
     }
   }
 
-  function startEdit(tech: Technician) {
-    setEditingId(tech.id);
-    setEditNombre(tech.nombre || '');
+  function startEdit(client: Client) {
+    setEditingId(client.id);
+    setEditNombre(client.nombre || '');
+    setEditEmail(client.email || '');
   }
 
-  async function handleSaveEdit(technicianId: string) {
+  async function handleSaveEdit(clientId: string) {
     try {
-      await updateTechnician(technicianId, { nombre: editNombre });
+      await updateClient(clientId, { nombre: editNombre, email: editEmail });
       setEditingId(null);
-      await fetchTechnicians();
+      await fetchClients();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Error inesperado');
+    }
+  }
+
+  async function handleToggleActive(clientId: string, activo: boolean) {
+    try {
+      await setClientActive(clientId, activo);
+      await fetchClients();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Error inesperado');
     }
@@ -82,7 +83,7 @@ export default function DispatcherTechnicians() {
 
   return (
     <div className="space-y-6 p-6">
-      <h2 className="text-2xl font-semibold text-slate-800">Técnicos</h2>
+      <h2 className="text-2xl font-semibold text-slate-800">Clientes</h2>
 
       <form onSubmit={handleCreate} className="flex items-end gap-3 rounded-lg bg-white p-4 shadow-sm">
         <label className="block text-sm text-slate-600">
@@ -115,9 +116,7 @@ export default function DispatcherTechnicians() {
         </p>
       )}
 
-      {result && result.items.length === 0 && (
-        <p className="text-sm text-slate-500">No hay técnicos registrados.</p>
-      )}
+      {result && result.items.length === 0 && <p className="text-sm text-slate-500">No hay clientes registrados.</p>}
 
       {result && result.items.length > 0 && (
         <>
@@ -125,33 +124,35 @@ export default function DispatcherTechnicians() {
             <thead>
               <tr className="border-b border-slate-200 text-left text-sm text-slate-500">
                 <th className="p-3">Nombre</th>
+                <th className="p-3">Email</th>
                 <th className="p-3">Estado</th>
-                <th className="p-3">Órdenes activas</th>
                 <th className="p-3">Acción</th>
               </tr>
             </thead>
             <tbody>
-              {result.items.map((tech) => (
-                <tr key={tech.id} className="border-b border-slate-100 text-sm">
-                  <td className="p-3">
-                    {editingId === tech.id ? (
-                      <input
-                        value={editNombre}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditNombre(e.target.value)}
-                        className="w-full rounded-md border border-slate-300 px-2 py-1"
-                      />
-                    ) : (
-                      tech.nombre
-                    )}
-                  </td>
-                  <td className="p-3">{tech.activo ? 'activo' : 'inactivo'}</td>
-                  <td className="p-3">{tech.activeOrderCount}</td>
-                  <td className="p-3 space-x-2">
-                    {editingId === tech.id ? (
-                      <>
+              {result.items.map((client) => (
+                <tr key={client.id} className="border-b border-slate-100 text-sm">
+                  {editingId === client.id ? (
+                    <>
+                      <td className="p-3">
+                        <input
+                          value={editNombre}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditNombre(e.target.value)}
+                          className="w-full rounded-md border border-slate-300 px-2 py-1"
+                        />
+                      </td>
+                      <td className="p-3">
+                        <input
+                          value={editEmail}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditEmail(e.target.value)}
+                          className="w-full rounded-md border border-slate-300 px-2 py-1"
+                        />
+                      </td>
+                      <td className="p-3">{client.activo ? 'activo' : 'inactivo'}</td>
+                      <td className="p-3 space-x-2">
                         <button
                           type="button"
-                          onClick={() => handleSaveEdit(tech.id)}
+                          onClick={() => handleSaveEdit(client.id)}
                           className="rounded-md bg-emerald-600 px-2 py-1 text-xs text-white hover:bg-emerald-700"
                         >
                           Guardar
@@ -163,26 +164,31 @@ export default function DispatcherTechnicians() {
                         >
                           Cancelar
                         </button>
-                      </>
-                    ) : (
-                      <>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="p-3">{client.nombre}</td>
+                      <td className="p-3">{client.email}</td>
+                      <td className="p-3">{client.activo ? 'activo' : 'inactivo'}</td>
+                      <td className="p-3 space-x-2">
                         <button
                           type="button"
-                          onClick={() => startEdit(tech)}
+                          onClick={() => startEdit(client)}
                           className="rounded-md bg-slate-200 px-2 py-1 text-xs hover:bg-slate-300"
                         >
                           Editar
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleToggleActive(tech.id, !tech.activo)}
+                          onClick={() => handleToggleActive(client.id, !client.activo)}
                           className="rounded-md bg-slate-200 px-2 py-1 text-xs hover:bg-slate-300"
                         >
-                          {tech.activo ? 'Desactivar' : 'Activar'}
+                          {client.activo ? 'Desactivar' : 'Activar'}
                         </button>
-                      </>
-                    )}
-                  </td>
+                      </td>
+                    </>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -192,18 +198,18 @@ export default function DispatcherTechnicians() {
             <button
               type="button"
               disabled={page <= 1}
-              onClick={() => fetchTechnicians(page - 1)}
+              onClick={() => fetchClients(page - 1)}
               className="rounded-md bg-slate-200 px-3 py-1 disabled:opacity-50"
             >
               Anterior
             </button>
             <span>
-              Página {result.page} — {result.total} técnicos en total
+              Página {result.page} — {result.total} clientes en total
             </span>
             <button
               type="button"
               disabled={page * result.pageSize >= result.total}
-              onClick={() => fetchTechnicians(page + 1)}
+              onClick={() => fetchClients(page + 1)}
               className="rounded-md bg-slate-200 px-3 py-1 disabled:opacity-50"
             >
               Siguiente

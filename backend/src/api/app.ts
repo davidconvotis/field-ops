@@ -7,6 +7,7 @@ const ordersRouter = require('./orders');
 const executionsRouter = require('./executions');
 const reviewsRouter = require('./reviews');
 const techniciansRouter = require('./technicians');
+const clientsRouter = require('./clients');
 const errorHandler = require('../middleware/errorHandler');
 const tlsEnforce = require('../middleware/tlsEnforce');
 const { scheduleRetentionJob } = require('../adapters/retentionJob');
@@ -21,6 +22,7 @@ app.use('/api/v1/orders', ordersRouter);
 app.use('/api/v1/orders', executionsRouter);
 app.use('/api/v1/orders', reviewsRouter);
 app.use('/api/v1/technicians', techniciansRouter);
+app.use('/api/v1/clients', clientsRouter);
 
 app.get('/health', (req: Request, res: Response) => res.json({ status: 'ok' }));
 

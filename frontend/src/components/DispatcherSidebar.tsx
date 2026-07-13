@@ -13,6 +13,9 @@ export default function DispatcherSidebar() {
       <NavLink to="/dispatcher/technicians" className={linkClass}>
         Técnicos
       </NavLink>
+      <NavLink to="/dispatcher/clients" className={linkClass}>
+        Clientes
+      </NavLink>
     </nav>
   );
 }

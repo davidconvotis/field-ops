@@ -6,6 +6,7 @@ import NavBar from './components/NavBar';
 import DispatcherLayout from './pages/DispatcherLayout';
 import DispatcherOrders from './pages/DispatcherOrders';
 import DispatcherTechnicians from './pages/DispatcherTechnicians';
+import DispatcherClients from './pages/DispatcherClients';
 import TechnicianExecutionForm from './pages/TechnicianExecutionForm';
 import SupervisorReview from './pages/SupervisorReview';
 import ClientOrders from './pages/ClientOrders';
@@ -40,6 +41,7 @@ export default function App() {
           <Route index element={<Navigate to="orders" replace />} />
           <Route path="orders" element={<DispatcherOrders />} />
           <Route path="technicians" element={<DispatcherTechnicians />} />
+          <Route path="clients" element={<DispatcherClients />} />
         </Route>
         <Route
           path="/technician"

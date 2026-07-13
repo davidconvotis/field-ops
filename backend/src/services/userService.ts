@@ -21,6 +21,57 @@ interface SetTechnicianActiveParams {
   dispatcherId: string;
 }
 
+interface CreateTechnicianParams {
+  nombre: string;
+  email: string;
+}
+
+interface UpdateTechnicianParams {
+  technicianId: string;
+  nombre?: string;
+  email?: string;
+}
+
+// Duck-typed en vez de `instanceof Prisma.PrismaClientKnownRequestError`: el cliente
+// de test (SQLite, src/generated/prisma-test-client) y el de producción (@prisma/client)
+// son paquetes generados por separado — ver misma nota en clientService.ts.
+function isUniqueConstraintError(err: unknown): boolean {
+  return typeof err === 'object' && err !== null && (err as { code?: string }).code === 'P2002';
+}
+
+function handleEmailConflict(err: unknown): never {
+  if (isUniqueConstraintError(err)) {
+    throw new HttpError(409, 'email ya registrado por otro usuario');
+  }
+  throw err;
+}
+
+// FR-019
+async function createTechnician({ nombre, email }: CreateTechnicianParams): Promise<User> {
+  try {
+    return await prisma.user.create({
+      data: { role: ROLES.TECNICO, nombre, email, activo: true, passwordHash: '' },
+    });
+  } catch (err: unknown) {
+    return handleEmailConflict(err);
+  }
+}
+
+// FR-020
+async function updateTechnician({ technicianId, nombre, email }: UpdateTechnicianParams): Promise<User> {
+  const technician = await prisma.user.findUnique({ where: { id: technicianId } });
+  if (!technician || technician.role !== ROLES.TECNICO) throw new HttpError(404, 'técnico no encontrado');
+
+  try {
+    const data: Record<string, unknown> = {};
+    if (nombre !== undefined) data.nombre = nombre;
+    if (email !== undefined) data.email = email;
+    return await prisma.user.update({ where: { id: technicianId }, data });
+  } catch (err: unknown) {
+    return handleEmailConflict(err);
+  }
+}
+
 interface ListTechniciansParams {
   activo?: boolean;
   page?: number;
@@ -117,4 +168,4 @@ async function listTechnicians({ activo, page }: ListTechniciansParams): Promise
   };
 }
 
-export = { setTechnicianActive, listTechnicians, HttpError };
+export = { setTechnicianActive, listTechnicians, createTechnician, updateTechnician, HttpError };

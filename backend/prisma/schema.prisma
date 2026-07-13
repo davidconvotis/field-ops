@@ -19,6 +19,7 @@ enum OrderStatus {
   pendiente_de_revision
   aprobada
   rechazada
+  cancelada
 }
 
 enum AuditAction {
@@ -29,6 +30,8 @@ enum AuditAction {
   enviar_ejecucion
   aprobar
   rechazar
+  cancelar
+  editar_cliente
   conflicto_concurrente
 }
 
@@ -70,6 +73,7 @@ model Order {
   version      Int         @default(0)
 
   rejectionReason    String?
+  cancellationReason String?
   resolvedByUserId   String?
   resolvedBy         User?    @relation("ResolvedByOrders", fields: [resolvedByUserId], references: [id])
 

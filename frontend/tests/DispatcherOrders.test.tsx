@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import DispatcherOrders from '../src/pages/DispatcherOrders';
 
@@ -97,4 +97,75 @@ test('botón Refrescar dispara una nueva petición; no hay refetch automático s
   fireEvent.click(screen.getByRole('button', { name: /refrescar/i }));
 
   await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledTimes(2));
+});
+
+test('editar cliente de una orden no terminal (reutiliza ClientSearchSelect)', async () => {
+  (globalThis.fetch as jest.Mock).mockResolvedValueOnce(
+    mockOrdersResponse([
+      { id: 'o1', status: 'sin_asignar', clientNombre: 'Cliente Uno', technicianNombre: null, createdAt: '2026-07-13T00:00:00.000Z' },
+    ]),
+  );
+
+  render(
+    <MemoryRouter>
+      <DispatcherOrders />
+    </MemoryRouter>,
+  );
+
+  const row = (await screen.findByText('o1')).closest('tr') as HTMLElement;
+  fireEvent.click(within(row).getByRole('button', { name: /editar cliente/i }));
+
+  (globalThis.fetch as jest.Mock).mockResolvedValueOnce({
+    ok: true,
+    status: 200,
+    text: async () => JSON.stringify({ items: [{ id: 'c2', nombre: 'Cliente Dos', email: 'dos@test.dev', activo: true }], page: 1, pageSize: 50, total: 1 }),
+  });
+  fireEvent.change(within(row).getByPlaceholderText(/buscar cliente/i), { target: { value: 'Dos' } });
+
+  const resultButton = await within(row).findByRole('button', { name: /Cliente Dos/ });
+
+  (globalThis.fetch as jest.Mock).mockResolvedValueOnce({ ok: true, status: 200, text: async () => JSON.stringify({ id: 'o1' }) });
+  (globalThis.fetch as jest.Mock).mockResolvedValueOnce(mockOrdersResponse([]));
+  fireEvent.click(resultButton);
+
+  await waitFor(() =>
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/v1/orders/o1',
+      expect.objectContaining({ method: 'PATCH' }),
+    ),
+  );
+});
+
+test('cancelar orden exige motivo antes de confirmar', async () => {
+  (globalThis.fetch as jest.Mock).mockResolvedValueOnce(
+    mockOrdersResponse([
+      { id: 'o1', status: 'sin_asignar', clientNombre: 'Cliente Uno', technicianNombre: null, createdAt: '2026-07-13T00:00:00.000Z' },
+    ]),
+  );
+
+  render(
+    <MemoryRouter>
+      <DispatcherOrders />
+    </MemoryRouter>,
+  );
+
+  await screen.findByText('o1');
+  fireEvent.click(screen.getByRole('button', { name: /^cancelar$/i }));
+
+  const confirmButton = screen.getByRole('button', { name: /confirmar cancelación/i });
+  expect(confirmButton).toBeDisabled();
+
+  fireEvent.change(screen.getByLabelText(/motivo/i), { target: { value: 'Ya no se necesita' } });
+  expect(confirmButton).not.toBeDisabled();
+
+  (globalThis.fetch as jest.Mock).mockResolvedValueOnce({ ok: true, status: 200, text: async () => JSON.stringify({ id: 'o1', status: 'cancelada' }) });
+  (globalThis.fetch as jest.Mock).mockResolvedValueOnce(mockOrdersResponse([]));
+  fireEvent.click(confirmButton);
+
+  await waitFor(() =>
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/v1/orders/o1/cancel',
+      expect.objectContaining({ method: 'POST' }),
+    ),
+  );
 });

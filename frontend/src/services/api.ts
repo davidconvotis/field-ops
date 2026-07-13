@@ -127,4 +127,86 @@ export async function getOrder(orderId: string): Promise<any> {
   return request(`/orders/${orderId}`, { method: 'GET' });
 }
 
+// 003-dispatcher-orders-ui FR-021: búsqueda de clientes por cualquier campo.
+// Devuelve PaginatedClients { items, page, pageSize, total }.
+export async function searchClients({ q, page }: { q?: string; page?: number } = {}): Promise<any> {
+  const params = new URLSearchParams();
+  if (q) params.set('q', q);
+  if (page) params.set('page', String(page));
+  const qs = params.toString();
+  return request(`/clients${qs ? `?${qs}` : ''}`, { method: 'GET' });
+}
+
+// FR-015
+export async function createClient({ nombre, email }: { nombre: string; email: string }): Promise<any> {
+  return request('/clients', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nombre, email }),
+  });
+}
+
+// FR-016
+export async function updateClient(clientId: string, { nombre, email }: { nombre?: string; email?: string }): Promise<any> {
+  return request(`/clients/${clientId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nombre, email }),
+  });
+}
+
+// FR-017
+export async function setClientActive(clientId: string, activo: boolean): Promise<any> {
+  return request(`/clients/${clientId}/activo`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ activo }),
+  });
+}
+
+// FR-019
+export async function createTechnician({ nombre, email }: { nombre: string; email: string }): Promise<any> {
+  return request('/technicians', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nombre, email }),
+  });
+}
+
+// FR-020
+export async function updateTechnician(
+  technicianId: string,
+  { nombre, email }: { nombre?: string; email?: string },
+): Promise<any> {
+  return request(`/technicians/${technicianId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nombre, email }),
+  });
+}
+
+// FR-023
+export async function editOrderClient(
+  orderId: string,
+  { clientId, expectedVersion }: { clientId: string; expectedVersion: number },
+): Promise<any> {
+  return request(`/orders/${orderId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ clientId, expectedVersion }),
+  });
+}
+
+// FR-025
+export async function cancelOrder(
+  orderId: string,
+  { reason, expectedVersion }: { reason: string; expectedVersion: number },
+): Promise<any> {
+  return request(`/orders/${orderId}/cancel`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reason, expectedVersion }),
+  });
+}
+
 export { ApiError, generateIdempotencyKey };

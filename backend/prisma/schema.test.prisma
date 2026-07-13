@@ -50,7 +50,8 @@ model Order {
   technician   User?    @relation("TechnicianOrders", fields: [technicianId], references: [id])
   version      Int      @default(0)
 
-  rejectionReason  String?
+  rejectionReason    String?
+  cancellationReason String?
   resolvedByUserId String?
   resolvedBy       User?    @relation("ResolvedByOrders", fields: [resolvedByUserId], references: [id])
 

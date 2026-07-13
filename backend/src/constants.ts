@@ -12,9 +12,14 @@ const ORDER_STATUS = Object.freeze({
   PENDIENTE_DE_REVISION: 'pendiente_de_revision',
   APROBADA: 'aprobada',
   RECHAZADA: 'rechazada',
+  CANCELADA: 'cancelada',
 } as const);
 
-const TERMINAL_STATUSES = Object.freeze([ORDER_STATUS.APROBADA, ORDER_STATUS.RECHAZADA] as const);
+const TERMINAL_STATUSES = Object.freeze([
+  ORDER_STATUS.APROBADA,
+  ORDER_STATUS.RECHAZADA,
+  ORDER_STATUS.CANCELADA,
+] as const);
 
 const AUDIT_ACTIONS = Object.freeze({
   CREAR: 'crear',
@@ -24,6 +29,8 @@ const AUDIT_ACTIONS = Object.freeze({
   ENVIAR_EJECUCION: 'enviar_ejecucion',
   APROBAR: 'aprobar',
   RECHAZAR: 'rechazar',
+  CANCELAR: 'cancelar',
+  EDITAR_CLIENTE: 'editar_cliente',
   CONFLICTO_CONCURRENTE: 'conflicto_concurrente',
 } as const);
 

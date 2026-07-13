@@ -3,16 +3,32 @@ const request = require('supertest');
 const { app } = require('../contract/setup');
 const { createUser, createOrder } = require('../helpers/fixtures');
 
+// Busca un técnico por id recorriendo todas las páginas de ?activo=true — con
+// muchos técnicos activos acumulados en la suite completa (US6/US7 crean varios),
+// el técnico recién creado por este test puede caer fuera de la página 1
+// (orderBy nombre asc), ya que el endpoint no soporta filtro por id.
+async function findActiveTechnicianAcrossPages(token: string, technicianId: string): Promise<any> {
+  let page = 1;
+  for (;;) {
+    const res = await request(app).get(`/api/v1/technicians?activo=true&page=${page}`).set('Authorization', `Bearer ${token}`);
+    const found = res.body.items.find((t: any) => t.id === technicianId);
+    if (found) return { found, res };
+    if (page * res.body.pageSize >= res.body.total) return { found: undefined, res };
+    page += 1;
+  }
+}
+
 describe('003-dispatcher-orders-ui US2: desplegable de asignación — edge cases', () => {
   test('desplegable (GET /technicians?activo=true) excluye técnicos inactivos', async () => {
     const { user: active } = await createUser('tecnico', { activo: true });
-    await createUser('tecnico', { activo: false });
+    const { user: inactive } = await createUser('tecnico', { activo: false });
     const { token } = await createUser('dispatcher');
 
-    const res = await request(app).get('/api/v1/technicians?activo=true').set('Authorization', `Bearer ${token}`);
-    const ids = res.body.items.map((t: any) => t.id);
-    expect(ids).toContain(active.id);
-    expect(ids.length).toBe(res.body.items.filter((t: any) => t.activo).length);
+    const { found } = await findActiveTechnicianAcrossPages(token, active.id);
+    expect(found).toBeDefined();
+
+    const { found: foundInactive } = await findActiveTechnicianAcrossPages(token, inactive.id);
+    expect(foundInactive).toBeUndefined();
   });
 
   test('asignación sobre orden en estado terminal -> 422 (FR-006)', async () => {

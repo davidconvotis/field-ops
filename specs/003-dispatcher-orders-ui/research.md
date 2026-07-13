@@ -50,8 +50,66 @@ Sin `NEEDS CLARIFICATION` pendientes en Technical Context (todos resueltos en `/
 
 ## 5. Modal de confirmación de reasignación
 
-**Decision**: El modal de confirmación (FR-005a) es un componente puramente de frontend (`ReassignConfirmModal.jsx`); no requiere cambio de contrato backend — la llamada a `PATCH /orders/{orderId}/assign` (ya existente, con `expectedVersion` para lock optimista) se dispara solo tras confirmar en el modal.
+**Decision**: El modal de confirmación (FR-005a) es un componente puramente de frontend (`ReassignConfirmModal.tsx`); no requiere cambio de contrato backend — la llamada a `PATCH /orders/{orderId}/assign` (ya existente, con `expectedVersion` para lock optimista) se dispara solo tras confirmar en el modal.
 
 **Rationale**: El backend ya implementa el chequeo atómico (`expectedVersion`, `001-work-order-management` FR-05b); el modal es una fricción de UX del lado cliente antes de invocar la API ya existente, sin lógica de negocio nueva.
 
 **Alternatives considered**: N/A — no hay alternativa de diseño backend relevante, es puramente un gate de UI.
+
+---
+
+## Revisión 2 (2026-07-13) — US5-US8: CRUD de clientes/técnicos, cancelación de orden
+
+Contexto: ADR-002 (constitution v1.2.0) mueve esta funcionalidad a "Dentro del slice"; ADR-003 (constitution v2.0.0) hace TypeScript obligatorio (ya migrado y verificado en verde para US1-US4). Las decisiones siguientes cubren únicamente lo nuevo.
+
+## 6. Búsqueda de clientes "por cualquier campo" (US5)
+
+**Decision**: Nuevo endpoint `GET /clients?q=<texto>` (dispatcher-only) que busca sobre `nombre` y `email` con `contains` de Prisma, y adicionalmente compara `id` con igualdad exacta si `q` tiene forma de uuid. Respuesta paginada igual que `/technicians` (`{ items, page, pageSize, total }`). Frontend debounced (300ms) para no disparar una request por tecla.
+
+**Decision (revisado — resolución de C1 de `/speckit-analyze`)**: Prisma `mode: 'insensitive'` NO existe en el provider SQLite (usado por `schema.test.prisma`) — lanza `PrismaClientValidationError` en runtime, no solo "se comporta distinto". `clientService.searchClients` construye el filtro condicionalmente según el datasource activo:
+
+```ts
+const caseInsensitive = process.env.NODE_ENV !== 'test'; // false en SQLite de test, true en Postgres real
+const textMatch = (q: string) => caseInsensitive ? { contains: q, mode: 'insensitive' as const } : { contains: q };
+```
+
+En producción (Postgres) la búsqueda es insensible a mayúsculas (cumple AC1 de US5). En el entorno de test (SQLite) queda sensible a mayúsculas — los tests/fixtures de `T041`/`T042` deben usar el mismo casing en el `q` de búsqueda que en los datos sembrados, documentado explícitamente como simplificación del entorno de test, no como comportamiento de producción.
+
+**Rationale**: FR-021 pide "cualquier campo (nombre, email o id)". Prisma no soporta buscar por múltiples campos heterogéneos con un único operador `contains` de forma type-safe sin un `OR`; se arma `OR: [{ nombre: textMatch(q) }, { email: textMatch(q) }, ...(isUuid(q) ? [{ id: q }] : [])]`.
+
+**Alternatives considered**:
+- Full-text search (Postgres `tsvector`): rechazado — sobre-ingeniería para un campo nombre/email de tamaño pequeño (clientes de una operación de despacho, no miles simultáneos); `contains` es suficiente y ya usado en el resto del proyecto (ningún índice FTS existe hoy).
+- Buscar client-side sobre todo el dataset cargado: rechazado — igual que en research.md §1/§4, requeriría cargar todos los clientes sin paginar.
+- SQL crudo (`$queryRaw` con `LOWER(...)`) para uniformidad cross-provider: rechazado — el resto del proyecto usa exclusivamente Prisma ORM tipado; introducir raw SQL rompe esa consistencia y el type-safety ganado con TypeScript (ADR-003) por un caso de bajo riesgo (dataset pequeño, entorno de test ya documentado como simplificación aceptable).
+
+## 7. CRUD de clientes y técnicos — servicio nuevo vs. extender existente
+
+**Decision**: Nuevo `clientService.ts` (createClient, updateClient, setClientActive, searchClients) espejando la forma de `userService.ts`, en vez de generalizar un "userService" único para ambos roles. `userService.ts` se extiende con `createTechnician`/`updateTechnician` (mismo archivo que ya tiene `setTechnicianActive`/`listTechnicians`).
+
+**Rationale**: Clientes y técnicos comparten el modelo `User` pero sus reglas de negocio ya divergen (baja de técnico dispara reasignación automática de órdenes, FR-004d; baja de cliente NO toca sus órdenes, ver Edge Cases de spec.md) — mantenerlos en servicios separados evita condicionales `if (role === ...)` dispersos y sigue el patrón ya establecido (un servicio por "concepto de negocio", no por tabla).
+
+**Alternatives considered**: Un único `userService.ts` con todas las operaciones de cliente+técnico: rechazado por la divergencia de reglas de negocio ya mencionada; haría el archivo más largo sin beneficio real.
+
+## 8. Conflicto de email duplicado (FR-018)
+
+**Decision**: `createClient`/`updateClient`/`createTechnician`/`updateTechnician` capturan la excepción de Prisma `P2002` (unique constraint violation sobre `email`) y la traducen a `HttpError(409, 'email ya registrado por otro usuario')`, en vez de dejar que se propague como 500. La detección es duck-typed (`err.code === 'P2002'`), NO `instanceof Prisma.PrismaClientKnownRequestError` — el cliente de test (SQLite, `src/generated/prisma-test-client`) y el de producción (`@prisma/client`) son paquetes generados por separado, sus clases de error no comparten identidad entre sí, por lo que `instanceof` contra un import de `@prisma/client` falla silenciosamente en el entorno de test (devuelve 500 en vez de 409).
+
+**Rationale**: El constraint `email @unique` ya existe en el schema desde `001` (sin cambios necesarios) — el trabajo es puramente de manejo de errores en la capa de servicio, consistente con el patrón `HttpError` ya usado en todo el proyecto.
+
+**Alternatives considered**: Verificar existencia previa con un `findUnique` antes del `create`/`update` (evitar el catch): rechazado — introduce una carrera (TOCTOU) entre el check y el write bajo escritura concurrente; capturar `P2002` es atómico y ya es el patrón recomendado por Prisma.
+
+## 9. Cancelación de orden — nuevo estado vs. reutilizar `rechazada`
+
+**Decision**: Nuevo valor de enum `OrderStatus.cancelada` + columna `Order.cancellationReason String?` (nullable), en vez de reutilizar `rechazada`/`rejectionReason`. `cancelOrder` vive en `orderService.ts` (no en `reviewService.ts`) porque puede aplicarse desde `sin_asignar` O `pendiente_de_revision` (cualquier estado no terminal), a diferencia de `approve`/`reject` que solo aplican desde `pendiente_de_revision` — no encaja en el helper compartido `resolveOrder` de `reviewService.ts` sin generalizarlo innecesariamente.
+
+**Rationale**: Ya decidido en ADR-002 (alternativa "tratar cancelación como rechazo" fue rechazada explícitamente ahí — mezclaría dos motivos semánticamente distintos). `cancelOrder` reutiliza `optimisticUpdateOrder` (mismo lock por `version` que `assignTechnician`/`resolveOrder`) para el mismo chequeo atómico ante carreras (edge case ya documentado en spec.md).
+
+**Alternatives considered**: Ver ADR-002 "Alternativas consideradas" (ya resuelto ahí, no se repite el análisis).
+
+## 10. Edición del cliente de una orden (FR-023) — endpoint dedicado vs. extender `/assign`
+
+**Decision**: Nuevo `PATCH /orders/{orderId}` (body `{ clientId }`) dedicado a editar el cliente, separado de `PATCH /orders/{orderId}/assign` (que edita `technicianId`).
+
+**Rationale**: Mantener un endpoint por campo editable es más simple de documentar/testear (permisos, validaciones y respuestas de error no se mezclan) y sigue el patrón REST ya usado (`/assign` es su propio sub-recurso). Ambos exigen estado no terminal y usan el mismo `optimisticUpdateOrder`.
+
+**Alternatives considered**: Generalizar `/assign` a un `PATCH /orders/{orderId}` único que acepte `clientId` y/o `technicianId`: rechazado — mezclaría dos flujos de UI distintos (desplegable de asignación vs. edición de cliente) en un solo contrato, complicando la matriz de tests sin necesidad real (no hay caso de uso que edite ambos a la vez).

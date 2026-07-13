@@ -29,6 +29,20 @@ interface AssignTechnicianParams {
   dispatcherId: string;
 }
 
+interface EditClientParams {
+  orderId: string;
+  clientId: string;
+  expectedVersion?: number;
+  dispatcherId: string;
+}
+
+interface CancelOrderParams {
+  orderId: string;
+  reason: string;
+  expectedVersion?: number;
+  dispatcherId: string;
+}
+
 interface ListForRoleParams {
   role: UserRole;
   userId: string;
@@ -111,6 +125,95 @@ async function assignTechnician({ orderId, technicianId, expectedVersion, dispat
   }
 }
 
+// FR-023: editar cliente de una orden en estado no terminal, mismo lock optimista
+// que assignTechnician; audita AUDIT_ACTIONS.EDITAR_CLIENTE.
+async function editClient({ orderId, clientId, expectedVersion, dispatcherId }: EditClientParams): Promise<Order | null> {
+  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  if (!order) throw new HttpError(404, 'orden no encontrada');
+
+  if (TERMINAL_STATUSES.includes(order.status)) {
+    throw new HttpError(422, 'orden en estado terminal, no se puede editar');
+  }
+
+  const client = await prisma.user.findUnique({ where: { id: clientId } });
+  if (!client || client.role !== ROLES.CLIENTE) {
+    throw new HttpError(404, 'clientId inexistente o no corresponde a un cliente');
+  }
+
+  const previousClientId = order.clientId;
+
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const applied = await optimisticUpdateOrder(tx, {
+        orderId,
+        expectedVersion: expectedVersion ?? order.version,
+        data: { clientId },
+      });
+      if (!applied) {
+        const current = await tx.order.findUnique({ where: { id: orderId } });
+        const err = new HttpError(409, 'la orden cambió de estado entre la lectura y el intento de edición');
+        err.currentStatus = current!.status;
+        throw err;
+      }
+      await recordAuditEntry(tx, {
+        orderId,
+        actorUserId: dispatcherId,
+        action: AUDIT_ACTIONS.EDITAR_CLIENTE,
+        metadata: { clienteAnterior: previousClientId, clienteNuevo: clientId },
+      });
+      return tx.order.findUnique({ where: { id: orderId } });
+    });
+  } catch (err: unknown) {
+    if ((err as Error).name === 'AuditUnavailableError') throw new HttpError(503, 'servicio de auditoría no disponible');
+    throw err;
+  }
+}
+
+// FR-025/FR-026: cancelar orden en estado no terminal (sin_asignar O pendiente_de_revision,
+// a diferencia de approve/reject que solo aplican desde pendiente_de_revision), motivo
+// obligatorio, mismo lock optimista que assignTechnician/editClient.
+async function cancelOrder({ orderId, reason, expectedVersion, dispatcherId }: CancelOrderParams): Promise<Order | null> {
+  const trimmedReason = (reason || '').trim();
+  if (!trimmedReason) throw new HttpError(400, 'motivo de cancelación obligatorio y no vacío');
+
+  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  if (!order) throw new HttpError(404, 'orden no encontrada');
+
+  if (TERMINAL_STATUSES.includes(order.status)) {
+    throw new HttpError(422, 'orden en estado terminal, no se puede cancelar');
+  }
+
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const applied = await optimisticUpdateOrder(tx, {
+        orderId,
+        expectedVersion: expectedVersion ?? order.version,
+        data: {
+          status: ORDER_STATUS.CANCELADA,
+          cancellationReason: trimmedReason,
+          resolvedByUserId: dispatcherId,
+          resolvedAt: new Date(),
+        },
+      });
+      if (!applied) {
+        const current = await tx.order.findUnique({ where: { id: orderId } });
+        const err = new HttpError(409, 'la orden cambió de estado entre la lectura y el intento de cancelación');
+        err.currentStatus = current!.status;
+        throw err;
+      }
+      await recordAuditEntry(tx, {
+        orderId,
+        actorUserId: dispatcherId,
+        action: AUDIT_ACTIONS.CANCELAR,
+      });
+      return tx.order.findUnique({ where: { id: orderId } });
+    });
+  } catch (err: unknown) {
+    if ((err as Error).name === 'AuditUnavailableError') throw new HttpError(503, 'servicio de auditoría no disponible');
+    throw err;
+  }
+}
+
 const ORDERS_PAGE_SIZE = 50;
 
 // FR-017/FR-018 + 003-dispatcher-orders-ui FR-001/FR-002a/FR-014: scope por rol
@@ -169,4 +272,4 @@ async function getByIdForRole({ orderId, role, userId }: GetByIdForRoleParams) {
   return order;
 }
 
-export = { createOrder, assignTechnician, listForRole, getByIdForRole, HttpError };
+export = { createOrder, assignTechnician, editClient, cancelOrder, listForRole, getByIdForRole, HttpError };

@@ -29,6 +29,36 @@ router.get('/', authn, rbac(ROLES.DISPATCHER), async (req: AuthedRequest, res: R
   }
 });
 
+// 003-dispatcher-orders-ui FR-019
+router.post('/', authn, rbac(ROLES.DISPATCHER), async (req: AuthedRequest, res: Response, next: NextFunction) => {
+  try {
+    const technician = await userService.createTechnician({ nombre: req.body.nombre, email: req.body.email });
+    res.status(201).json(technician);
+  } catch (err) {
+    if (err instanceof userService.HttpError) {
+      return res.status(err.status).json({ error: err.publicMessage });
+    }
+    return next(err);
+  }
+});
+
+// 003-dispatcher-orders-ui FR-020
+router.patch('/:technicianId', authn, rbac(ROLES.DISPATCHER), async (req: AuthedRequest, res: Response, next: NextFunction) => {
+  try {
+    const technician = await userService.updateTechnician({
+      technicianId: req.params.technicianId,
+      nombre: req.body.nombre,
+      email: req.body.email,
+    });
+    res.status(200).json(technician);
+  } catch (err) {
+    if (err instanceof userService.HttpError) {
+      return res.status(err.status).json({ error: err.publicMessage });
+    }
+    return next(err);
+  }
+});
+
 router.patch('/:technicianId/activo', authn, rbac(ROLES.DISPATCHER), async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
     const technician = await userService.setTechnicianActive({
