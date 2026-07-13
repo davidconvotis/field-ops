@@ -17,6 +17,11 @@
 - Q: ¿Reasignar una orden que ya tiene técnico asignado a otro técnico requiere un paso de confirmación adicional (modal), o basta con seleccionar en el desplegable? → A: Requiere modal de confirmación adicional.
 - Q: ¿Los listados extensos (órdenes/técnicos) usan paginación con controles de página, carga completa, o scroll infinito? → A: Paginación con controles de página, tamaño fijo.
 
+### Session 2026-07-13 (ronda 2 — ampliación CRUD)
+
+- Q: FR-025/FR-026 (cancelación de órdenes) contradice la exclusión ya documentada en `001-work-order-management` y en la constitution ("Gestión completa del ciclo de vida" fuera del slice) → A: Se mantiene en el spec, pero queda BLOQUEADO para `/speckit-plan` hasta resolver vía ADR + amend de constitution (no se planifica esta parte sin eso). **Resuelto 2026-07-13**: ver ADR-002 y constitution v1.2.0 — desbloqueado.
+- Q: ¿"Eliminar" cliente/técnico es siempre baja lógica, o se permite borrado físico cuando no tiene ninguna orden asociada? → A: Siempre baja lógica (`activo=false`), sin excepción, incluso sin historial.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Dispatcher visualiza listado de órdenes (Priority: P1)
@@ -88,11 +93,83 @@ Un dispatcher accede a una vista dedicada de técnicos donde ve el listado compl
 
 ---
 
+### User Story 5 - Dispatcher busca cliente existente por cualquier campo al crear una orden (Priority: P1)
+
+Al crear una nueva orden, el dispatcher escribe texto libre y el sistema busca entre los clientes existentes por cualquier campo (nombre, email o id), mostrando coincidencias parciales para seleccionar el cliente correcto sin conocer su id de memoria.
+
+**Why this priority**: Sustituye el campo "Cliente ID" de texto libre (propenso a error, requiere conocer el uuid) que ya existe en el flujo de creación de orden — es P1 porque toda creación de orden pasa por aquí.
+
+**Independent Test**: Con varios clientes creados, tipear un fragmento de nombre o email en el buscador y verificar que aparecen solo los clientes que coinciden; seleccionar uno y crear la orden verifica que queda asociada al cliente correcto.
+
+**Acceptance Scenarios**:
+
+1. **Given** clientes existentes con nombres/emails distintos, **When** el dispatcher tipea un fragmento que coincide con el nombre de uno o más, **Then** el sistema muestra esas coincidencias (parcial, no distingue mayúsculas/minúsculas).
+2. **Given** el buscador de clientes, **When** el dispatcher tipea un fragmento que coincide con el email o el id de un cliente, **Then** también aparece en los resultados (búsqueda por cualquier campo, no solo nombre).
+3. **Given** resultados de búsqueda visibles, **When** el dispatcher selecciona un cliente, **Then** el formulario de creación de orden queda asociado a ese `clientId` y ya no acepta texto libre como id.
+4. **Given** un texto buscado sin ninguna coincidencia, **When** el dispatcher lo confirma, **Then** el sistema ofrece la opción de crear un cliente nuevo (US6) con ese dato como punto de partida, en vez de permitir crear la orden con un cliente inexistente.
+
+---
+
+### User Story 6 - Dispatcher gestiona clientes (CRUD) (Priority: P2)
+
+Un dispatcher crea, edita y da de baja clientes desde una vista dedicada, análoga a la de técnicos.
+
+**Why this priority**: Necesaria para que la búsqueda de US5 tenga clientes para encontrar y para corregir datos, pero no bloquea la creación de órdenes si el cliente ya existe — por eso P2 y no P1.
+
+**Independent Test**: Crear un cliente nuevo con nombre/email, verificar que aparece en la búsqueda de US5; editarlo y verificar que el cambio se refleja; darlo de baja y verificar que ya no aparece en la búsqueda pero sus órdenes históricas siguen visibles.
+
+**Acceptance Scenarios**:
+
+1. **Given** un dispatcher en la vista de clientes, **When** crea un cliente con nombre y email válidos, **Then** el sistema lo persiste y queda disponible para búsqueda (US5) inmediatamente.
+2. **Given** un cliente existente, **When** el dispatcher edita su nombre o email, **Then** el sistema persiste el cambio y las órdenes ya creadas muestran el nombre actualizado.
+3. **Given** un cliente existente, **When** el dispatcher lo da de baja, **Then** el sistema lo marca inactivo (baja lógica, nunca borrado físico — ver Assumptions), lo excluye de nuevas búsquedas (US5), y conserva intactas sus órdenes históricas.
+4. **Given** un email ya usado por otro usuario, **When** el dispatcher intenta crear/editar un cliente con ese email, **Then** el sistema rechaza la operación (conflicto de unicidad).
+
+---
+
+### User Story 7 - Dispatcher gestiona técnicos (CRUD ampliado) (Priority: P2)
+
+Además de activar/desactivar (ya existente), un dispatcher crea nuevos técnicos y edita nombre/email de los existentes desde la vista de Técnicos.
+
+**Why this priority**: Completa el ciclo de vida de técnicos, pero el sistema ya es operable con técnicos precargados — no bloquea el flujo core de asignación.
+
+**Independent Test**: Crear un técnico nuevo, verificar que aparece (activo por defecto) en el listado de técnicos (US4) y en el desplegable de asignación (US2); editar su nombre y verificar el cambio reflejado en ambos lugares.
+
+**Acceptance Scenarios**:
+
+1. **Given** un dispatcher en la vista de técnicos, **When** crea un técnico con nombre y email válidos, **Then** el sistema lo persiste como activo por defecto.
+2. **Given** un técnico existente, **When** el dispatcher edita su nombre o email, **Then** el sistema persiste el cambio.
+3. **Given** un email ya usado por otro usuario, **When** el dispatcher intenta crear/editar un técnico con ese email, **Then** el sistema rechaza la operación (conflicto de unicidad).
+4. La baja de técnico (activo=false) reutiliza el mecanismo ya existente (`001-work-order-management` FR-004d) — no se agrega comportamiento nuevo aquí.
+
+---
+
+### User Story 8 - Dispatcher edita y cancela órdenes (CRUD ampliado de órdenes) (Priority: P2)
+
+Un dispatcher corrige el cliente asociado a una orden creada por error, y puede cancelar una orden en estado no terminal indicando un motivo.
+
+**Why this priority**: Cubre casos de corrección/arrepentimiento; el ciclo de vida core (crear/asignar/ejecutar/aprobar-rechazar) ya funciona sin esto — es un complemento, no un bloqueante.
+
+**Independent Test**: Crear una orden con un cliente equivocado, editarla para asociarla al cliente correcto, verificar el cambio; luego cancelar una orden no terminal con motivo y verificar que queda en estado `cancelada` (terminal) con motivo y timestamp auditados.
+
+**Acceptance Scenarios**:
+
+1. **Given** una orden en estado no terminal, **When** el dispatcher edita el cliente asociado, **Then** el sistema persiste el nuevo `clientId` y registra el cambio en auditoría.
+2. **Given** una orden en estado terminal (`aprobada`, `rechazada` o `cancelada`), **When** el dispatcher intenta editar su cliente, **Then** el sistema rechaza la operación (422).
+3. **Given** una orden en estado no terminal, **When** el dispatcher la cancela indicando un motivo no vacío, **Then** el sistema transiciona la orden a `cancelada` (nuevo estado terminal) y registra motivo, dispatcher y timestamp.
+4. **Given** una orden en estado no terminal, **When** el dispatcher intenta cancelarla sin motivo, **Then** el sistema rechaza la operación (400) exigiendo motivo obligatorio.
+5. **Given** una orden ya `cancelada`, **When** cualquier rol intenta asignarla, editarla o volver a cancelarla, **Then** el sistema la trata como cualquier otro estado terminal (rechazo 422/409 según corresponda).
+
+---
+
 ### Edge Cases
 
 - ¿Qué ocurre si el dispatcher intenta asignar una orden que otro dispatcher acaba de mover a estado terminal (carrera)? El sistema debe rechazar la asignación (409/422 según corresponda) y reflejar el estado real tras refrescar.
 - ¿Qué ocurre si un técnico pasa a inactivo mientras el desplegable de asignación está abierto con ese técnico listado? El sistema debe rechazar la asignación si se intenta confirmar contra un técnico ya inactivo, según la regla existente en 001-work-order-management.
 - ¿Cómo maneja el sistema un listado de órdenes o técnicos muy extenso? Se pagina con controles de página y tamaño fijo (FR-014) para mantener tiempos de respuesta aceptables (ver SC-002).
+- ¿Qué ocurre si la búsqueda de clientes (US5) no encuentra coincidencias? El sistema ofrece crear un cliente nuevo inline (US6) en vez de bloquear la creación de la orden.
+- ¿Qué ocurre si dos dispatchers editan/cancelan la misma orden casi simultáneamente? Se reutiliza el mismo chequeo atómico (optimistic lock por `version`) ya definido en `001-work-order-management` FR-05b — la segunda operación recibe 409 con el estado real.
+- ¿Qué ocurre si se intenta dar de baja (desactivar) un cliente que tiene órdenes en curso (no terminales)? A diferencia de los técnicos (que se reasignan automáticamente, FR-004d), las órdenes de un cliente dado de baja NO cambian de estado ni de cliente — la baja de cliente solo afecta si aparece en búsquedas futuras (US5), nunca altera órdenes existentes.
 
 ## Requirements *(mandatory)*
 
@@ -114,11 +191,24 @@ Un dispatcher accede a una vista dedicada de técnicos donde ve el listado compl
 - **FR-012**: El sistema MUST mostrar en el listado de técnicos la cantidad de órdenes en estado no terminal asignadas a cada técnico.
 - **FR-013**: El sistema MUST mostrar un estado vacío distinguible cuando no existan órdenes o no existan técnicos registrados.
 - **FR-014**: El sistema MUST paginar el listado de órdenes y el listado de técnicos mediante controles de página con tamaño de página fijo, cuando el número de registros exceda el tamaño de página.
+- **FR-015**: El sistema MUST permitir al dispatcher crear un nuevo cliente (nombre, email) desde una vista dedicada.
+- **FR-016**: El sistema MUST permitir al dispatcher editar nombre/email de un cliente existente.
+- **FR-017**: El sistema MUST permitir al dispatcher dar de baja (baja lógica, `activo=false`) a un cliente existente; un cliente inactivo se excluye de la búsqueda de US5 pero sus órdenes históricas permanecen intactas y visibles.
+- **FR-018**: El sistema MUST rechazar la creación/edición de un cliente o técnico con un email ya usado por otro usuario (conflicto de unicidad).
+- **FR-019**: El sistema MUST permitir al dispatcher crear un nuevo técnico (nombre, email) desde la vista de técnicos, activo por defecto.
+- **FR-020**: El sistema MUST permitir al dispatcher editar nombre/email de un técnico existente.
+- **FR-021**: El sistema MUST permitir buscar clientes existentes por cualquier campo (nombre, email o id) mediante texto libre con coincidencia parcial, al crear una nueva orden.
+- **FR-022**: El sistema MUST exigir que una nueva orden se asocie a un cliente existente seleccionado de los resultados de búsqueda (FR-021) — nunca a un `clientId` arbitrario no verificado; si no hay coincidencias, el sistema ofrece crear el cliente primero (FR-015).
+- **FR-023**: El sistema MUST permitir al dispatcher editar el cliente asociado a una orden mientras esté en un estado no terminal, registrando el cambio en auditoría.
+- **FR-024**: El sistema MUST rechazar la edición de cliente/asignación/cancelación sobre una orden en estado terminal (`aprobada`, `rechazada` o el nuevo `cancelada`).
+- **FR-025**: El sistema MUST permitir al dispatcher cancelar una orden en estado no terminal indicando un motivo obligatorio no vacío, transicionándola a un nuevo estado terminal `cancelada` con motivo, dispatcher y timestamp registrados.
+- **FR-026**: El estado `cancelada` MUST comportarse como cualquier otro estado terminal a todo efecto (no reasignable, no editable, visible en listados/histórico).
 
 ### Key Entities
 
-- **Orden**: entidad ya existente (001-work-order-management); en esta feature se consume su listado, estado, cliente y técnico asignado — sin nuevos atributos.
-- **Técnico (Usuario con rol técnico)**: entidad ya existente; en esta feature se consume su estado `activo`/`inactivo` y, de forma derivada, el conteo de órdenes no terminales asignadas.
+- **Orden**: entidad ya existente (001-work-order-management); en esta feature se consume su listado, estado, cliente y técnico asignado, y se amplía con la transición a un nuevo estado terminal `cancelada` (FR-025/FR-026) y la edición de su `clientId` en estado no terminal (FR-023).
+- **Técnico (Usuario con rol técnico)**: entidad ya existente; en esta feature se consume su estado `activo`/`inactivo` y, de forma derivada, el conteo de órdenes no terminales asignadas; se amplía con creación/edición (FR-019/FR-020).
+- **Cliente (Usuario con rol cliente)**: entidad ya existente (`001-work-order-management`); en esta feature se amplía con creación/edición/baja lógica (FR-015..FR-017) y se vuelve buscable por cualquier campo al crear una orden (FR-021).
 
 ## Success Criteria *(mandatory)*
 
@@ -129,6 +219,9 @@ Un dispatcher accede a una vista dedicada de técnicos donde ve el listado compl
 - **SC-003**: Un dispatcher puede completar la asignación inicial de una orden `sin_asignar` a un técnico (abrir desplegable, seleccionar, confirmar) en 3 interacciones o menos; una reasignación sobre orden ya asignada requiere una interacción adicional (confirmar modal).
 - **SC-004**: 100% de los intentos de asignación sobre técnicos inactivos u órdenes en estado terminal son rechazados sin generar asignaciones inconsistentes.
 - **SC-005**: El menú lateral está presente y funcional en el 100% de las páginas del panel de dispatcher.
+- **SC-006**: Un dispatcher encuentra y selecciona un cliente existente en menos de 10 segundos tipeando un fragmento de nombre, email o id.
+- **SC-007**: 100% de las órdenes canceladas quedan auditadas (motivo, dispatcher, timestamp) con la misma trazabilidad que aprobación/rechazo.
+- **SC-008**: 100% de los intentos de crear/editar cliente o técnico con email duplicado son rechazados sin crear registros inconsistentes.
 
 ## Assumptions
 
@@ -137,3 +230,8 @@ Un dispatcher accede a una vista dedicada de técnicos donde ve el listado compl
 - No se requiere actualización en tiempo real (websockets/polling) del listado de órdenes; refrescar manualmente es suficiente para esta versión.
 - El conteo de "órdenes activas asignadas" por técnico se calcula sobre estados no terminales (`sin_asignar` no aplica a técnico, se cuenta `pendiente_de_revision` y cualquier otro estado no terminal que exista).
 - El tamaño de página exacto (ej. 50 o 100 registros) se define en la fase de planning; el requisito aquí es que exista paginación con controles de página, priorizando el cumplimiento de SC-002.
+- **[RESUELTO 2026-07-13]** La cancelación de órdenes (FR-025/FR-026, estado `cancelada`) y el CRUD de clientes/técnicos (FR-015..FR-021, FR-023) quedaron formalmente dentro del slice vía `docs/adr/002-crud-clientes-tecnicos-y-cancelacion-de-orden.md` y la constitution v1.2.0 (filas 7-11 de "Dentro del slice"). Ya no hay bloqueo para `/speckit-plan`.
+- "Eliminar" cliente o técnico se implementa SIEMPRE como baja lógica (`activo=false`), sin excepción — incluso si el registro no tiene ninguna orden asociada. Nunca hay borrado físico, por integridad referencial y trazabilidad (Principio III de la constitution) y para mantener un único camino de código (clarify ronda 2).
+- La baja de un cliente (FR-017) NO dispara reasignación ni cambio de estado en sus órdenes existentes (a diferencia de la baja de técnico, FR-004d de `001`) — solo lo excluye de futuras búsquedas (US5).
+- La búsqueda de clientes (FR-021) se resuelve del lado servidor (coincidencia parcial sobre nombre/email/id), no cargando todo el dataset de clientes al frontend.
+- Los campos editables de cliente/técnico se limitan a `nombre`/`email` (mismos campos usados en `001`); no se agregan campos nuevos a la entidad `User`.

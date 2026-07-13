@@ -1,6 +1,7 @@
 module.exports = {
   testEnvironment: 'node',
-  testMatch: ['**/tests/**/test_*.js', '**/tests/performance/*.js'],
-  setupFiles: ['<rootDir>/tests/env.setup.js'],
+  preset: 'ts-jest',
+  testMatch: ['**/tests/**/test_*.ts', '**/tests/performance/*.ts'],
+  setupFiles: ['<rootDir>/tests/env.setup.ts'],
   testTimeout: 15000,
 };
