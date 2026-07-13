@@ -7,7 +7,9 @@ describe('NFR-04b: fallo de auditService -> rollback completo del cambio de esta
   let order;
 
   beforeEach(async () => {
-    client = await prisma.user.create({ data: { role: ROLES.CLIENTE, nombre: 'Cliente Test', email: `c-${Date.now()}@test.dev` } });
+    client = await prisma.user.create({
+      data: { role: ROLES.CLIENTE, nombre: 'Cliente Test', email: `c-${Date.now()}@test.dev`, passwordHash: 'x' },
+    });
     order = await prisma.order.create({ data: { clientId: client.id, status: ORDER_STATUS.SIN_ASIGNAR } });
   });
 

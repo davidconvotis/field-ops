@@ -67,11 +67,42 @@ async function assignTechnician({ orderId, technicianId, expectedVersion, dispat
   }
 }
 
-// FR-017/FR-018
-async function listForRole({ role, userId }) {
-  if (role === ROLES.CLIENTE) return prisma.order.findMany({ where: { clientId: userId } });
-  if (role === ROLES.TECNICO) return prisma.order.findMany({ where: { technicianId: userId } });
-  return prisma.order.findMany();
+const ORDERS_PAGE_SIZE = 50;
+
+// FR-017/FR-018 + 003-dispatcher-orders-ui FR-001/FR-002a/FR-014: scope por rol
+// PRIMERO, luego filtro opcional status/technicianId (AND), paginado (tamaño fijo),
+// con nombre de cliente/técnico incluido para listados legibles (research.md §3).
+async function listForRole({ role, userId, status, technicianId, page }) {
+  const scopeWhere =
+    role === ROLES.CLIENTE ? { clientId: userId } : role === ROLES.TECNICO ? { technicianId: userId } : {};
+
+  const where = { ...scopeWhere };
+  if (status) where.status = status;
+  if (technicianId) where.technicianId = technicianId;
+
+  const currentPage = Number.isInteger(page) && page >= 1 ? page : 1;
+
+  const [items, total] = await Promise.all([
+    prisma.order.findMany({
+      where,
+      include: { client: true, technician: true },
+      skip: (currentPage - 1) * ORDERS_PAGE_SIZE,
+      take: ORDERS_PAGE_SIZE,
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.order.count({ where }),
+  ]);
+
+  return {
+    items: items.map(({ client, technician, ...order }) => ({
+      ...order,
+      clientNombre: client.nombre,
+      technicianNombre: technician ? technician.nombre : null,
+    })),
+    page: currentPage,
+    pageSize: ORDERS_PAGE_SIZE,
+    total,
+  };
 }
 
 // FR-019: verificación consistente de autorización + existencia (no filtra existencia)

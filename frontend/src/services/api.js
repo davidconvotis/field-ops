@@ -1,4 +1,4 @@
-import { getSession, clearSession } from './session.js';
+import { clearSession } from './session.js';
 
 const BASE = '/api/v1';
 
@@ -10,12 +10,10 @@ class ApiError extends Error {
   }
 }
 
+// El JWT viaja en cookies httpOnly (credentials:'include'); nunca en un header
+// leído desde JS (Research §1, FR-007).
 async function request(path, options = {}) {
-  const session = getSession();
-  const headers = { ...(options.headers || {}) };
-  if (session?.token) headers.Authorization = `Bearer ${session.token}`;
-
-  const res = await fetch(`${BASE}${path}`, { ...options, headers });
+  const res = await fetch(`${BASE}${path}`, { ...options, credentials: 'include' });
   if (res.status === 401) clearSession();
 
   let body = null;
@@ -88,8 +86,25 @@ export async function rejectOrder(orderId, reason) {
   });
 }
 
-export async function listOrders() {
-  return request('/orders', { method: 'GET' });
+// 003-dispatcher-orders-ui FR-002a/FR-014: filtro combinable status/technicianId + paginación.
+// Devuelve PaginatedOrders { items, page, pageSize, total }.
+export async function listOrders({ status, technicianId, page } = {}) {
+  const params = new URLSearchParams();
+  if (status) params.set('status', status);
+  if (technicianId) params.set('technicianId', technicianId);
+  if (page) params.set('page', page);
+  const qs = params.toString();
+  return request(`/orders${qs ? `?${qs}` : ''}`, { method: 'GET' });
+}
+
+// 003-dispatcher-orders-ui FR-003/FR-004 (desplegable, activo=true) / FR-011/FR-012 (listado).
+// Devuelve PaginatedTechnicians { items, page, pageSize, total }.
+export async function listTechnicians({ activo, page } = {}) {
+  const params = new URLSearchParams();
+  if (typeof activo === 'boolean') params.set('activo', String(activo));
+  if (page) params.set('page', page);
+  const qs = params.toString();
+  return request(`/technicians${qs ? `?${qs}` : ''}`, { method: 'GET' });
 }
 
 export async function getOrder(orderId) {

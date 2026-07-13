@@ -39,18 +39,28 @@ export default function TechnicianExecutionForm() {
   }
 
   return (
-    <div>
-      <h2>Registrar ejecución</h2>
-      <form onSubmit={handleSubmit}>
-        <label>
+    <div className="mx-auto max-w-xl space-y-4 p-6">
+      <h2 className="text-2xl font-semibold text-slate-800">Registrar ejecución</h2>
+      <form onSubmit={handleSubmit} className="space-y-3 rounded-lg bg-white p-4 shadow-sm">
+        <label className="block text-sm text-slate-600">
           Orden ID
-          <input value={orderId} onChange={(e) => setOrderId(e.target.value)} required />
+          <input
+            value={orderId}
+            onChange={(e) => setOrderId(e.target.value)}
+            required
+            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+          />
         </label>
-        <label>
+        <label className="block text-sm text-slate-600">
           Notas
-          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} required />
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            required
+            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+          />
         </label>
-        <label>
+        <label className="block text-sm text-slate-600">
           Fotos de evidencia (≥1)
           <input
             type="file"
@@ -58,13 +68,22 @@ export default function TechnicianExecutionForm() {
             multiple
             onChange={(e) => setPhotos(Array.from(e.target.files))}
             required
+            className="mt-1 w-full text-sm"
           />
         </label>
-        <button type="submit" disabled={status === 'submitting'}>
+        <button
+          type="submit"
+          disabled={status === 'submitting'}
+          className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+        >
           Enviar ejecución
         </button>
       </form>
-      {message && <p role="status">{message}</p>}
+      {message && (
+        <p role="status" className="rounded-md bg-slate-100 px-3 py-2 text-sm text-slate-700">
+          {message}
+        </p>
+      )}
     </div>
   );
 }

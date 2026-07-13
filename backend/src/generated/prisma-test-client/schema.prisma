@@ -14,19 +14,31 @@ datasource db {
 }
 
 model User {
-  id     String  @id @default(uuid())
-  role   String
-  activo Boolean @default(true)
-  nombre String
-  email  String  @unique
+  id           String  @id @default(uuid())
+  role         String
+  activo       Boolean @default(true)
+  nombre       String
+  email        String  @unique
+  passwordHash String
 
-  ordersAsClient     Order[]           @relation("ClientOrders")
-  ordersAsTechnician Order[]           @relation("TechnicianOrders")
-  executionRecords   ExecutionRecord[]
-  auditLogEntries    AuditLogEntry[]
-  resolvedOrders     Order[]           @relation("ResolvedByOrders")
+  ordersAsClient       Order[]               @relation("ClientOrders")
+  ordersAsTechnician   Order[]               @relation("TechnicianOrders")
+  executionRecords     ExecutionRecord[]
+  auditLogEntries      AuditLogEntry[]
+  resolvedOrders       Order[]               @relation("ResolvedByOrders")
+  revokedRefreshTokens RevokedRefreshToken[]
 
   createdAt DateTime @default(now())
+}
+
+model RevokedRefreshToken {
+  jti       String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  revokedAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@index([expiresAt])
 }
 
 model Order {

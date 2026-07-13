@@ -1,5 +1,6 @@
-// Constitución: los tokens NUNCA se almacenan en localStorage.
-// Usamos sessionStorage (se limpia al cerrar la pestaña) en vez de localStorage.
+// 002-login-rbac: el JWT vive únicamente en cookies httpOnly (invisibles a JS,
+// gestionadas por el navegador — Research §1). Aquí solo guardamos metadata NO
+// sensible (role/userId) para render de UI (ej. redirect guard), nunca el token.
 const KEY = 'fieldops.session';
 
 export function getSession() {
@@ -7,8 +8,8 @@ export function getSession() {
   return raw ? JSON.parse(raw) : null;
 }
 
-export function setSession({ token, role, userId }) {
-  sessionStorage.setItem(KEY, JSON.stringify({ token, role, userId }));
+export function setSession({ role, userId }) {
+  sessionStorage.setItem(KEY, JSON.stringify({ role, userId }));
 }
 
 export function clearSession() {

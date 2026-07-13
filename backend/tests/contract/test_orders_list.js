@@ -12,7 +12,8 @@ describe('Contract: GET /orders', () => {
     const res = await request(app).get('/api/v1/orders').set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
-    expect(Array.isArray(res.body)).toBe(true);
+    expect(Array.isArray(res.body.items)).toBe(true);
+    expect(res.body).toEqual(expect.objectContaining({ page: 1, pageSize: 50 }));
     expectDocumentedStatus(doc, 'listOrders', 200);
   });
 

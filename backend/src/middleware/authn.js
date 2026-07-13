@@ -2,12 +2,21 @@ const { verifyToken, IdpUnavailableError, InvalidTokenError } = require('../adap
 
 /**
  * NFR-03/03b: 401 en token ausente/inválido; 503 si el propio validador externo falla.
+ * 002-login-rbac Research §1: el frontend envía el access JWT vía cookie httpOnly
+ * `access_token` (nunca localStorage). Se mantiene también el header `Authorization:
+ * Bearer` como vía alterna para no romper clientes/tests existentes de `001` que lo
+ * usan directamente (p.ej. tokens de dev emitidos por `seed.js`).
  */
 function authn(req, res, next) {
-  const header = req.headers.authorization || '';
-  const [scheme, token] = header.split(' ');
+  let token = req.cookies && req.cookies.access_token;
 
-  if (scheme !== 'Bearer' || !token) {
+  if (!token) {
+    const header = req.headers.authorization || '';
+    const [scheme, headerToken] = header.split(' ');
+    if (scheme === 'Bearer') token = headerToken;
+  }
+
+  if (!token) {
     return res.status(401).json({ error: 'token ausente o formato inválido' });
   }
 

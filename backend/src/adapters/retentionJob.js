@@ -22,13 +22,26 @@ async function purgeExpiredPhotos(now = new Date()) {
   return purged;
 }
 
+// 002-login-rbac Research §3: filas de RevokedRefreshToken solo necesitan existir
+// mientras el refresh token que denegarían pudiera seguir siendo válido; una vez
+// vencido (expiresAt <= now) el propio JWT ya sería rechazado por firma/expiración,
+// así que la fila de denylist puede purgarse sin perder cobertura de seguridad.
+async function purgeExpiredRevokedTokens(now = new Date()) {
+  const { count } = await prisma.revokedRefreshToken.deleteMany({ where: { expiresAt: { lte: now } } });
+  return count;
+}
+
 function scheduleRetentionJob() {
   return cron.schedule('0 3 * * *', () => {
     purgeExpiredPhotos().catch((err) => {
       // eslint-disable-next-line no-console
       console.error('retentionJob falló:', err);
     });
+    purgeExpiredRevokedTokens().catch((err) => {
+      // eslint-disable-next-line no-console
+      console.error('purgeExpiredRevokedTokens falló:', err);
+    });
   });
 }
 
-module.exports = { purgeExpiredPhotos, scheduleRetentionJob };
+module.exports = { purgeExpiredPhotos, purgeExpiredRevokedTokens, scheduleRetentionJob };

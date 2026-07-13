@@ -19,6 +19,11 @@ export type PrismaPromise<T> = $Public.PrismaPromise<T>
  */
 export type User = $Result.DefaultSelection<Prisma.$UserPayload>
 /**
+ * Model RevokedRefreshToken
+ * 
+ */
+export type RevokedRefreshToken = $Result.DefaultSelection<Prisma.$RevokedRefreshTokenPayload>
+/**
  * Model Order
  * 
  */
@@ -171,6 +176,16 @@ export class PrismaClient<
     * ```
     */
   get user(): Prisma.UserDelegate<ExtArgs>;
+
+  /**
+   * `prisma.revokedRefreshToken`: Exposes CRUD operations for the **RevokedRefreshToken** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more RevokedRefreshTokens
+    * const revokedRefreshTokens = await prisma.revokedRefreshToken.findMany()
+    * ```
+    */
+  get revokedRefreshToken(): Prisma.RevokedRefreshTokenDelegate<ExtArgs>;
 
   /**
    * `prisma.order`: Exposes CRUD operations for the **Order** model.
@@ -653,6 +668,7 @@ export namespace Prisma {
 
   export const ModelName: {
     User: 'User',
+    RevokedRefreshToken: 'RevokedRefreshToken',
     Order: 'Order',
     ExecutionRecord: 'ExecutionRecord',
     EvidencePhoto: 'EvidencePhoto',
@@ -672,7 +688,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "user" | "order" | "executionRecord" | "evidencePhoto" | "auditLogEntry"
+      modelProps: "user" | "revokedRefreshToken" | "order" | "executionRecord" | "evidencePhoto" | "auditLogEntry"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -743,6 +759,76 @@ export namespace Prisma {
           count: {
             args: Prisma.UserCountArgs<ExtArgs>
             result: $Utils.Optional<UserCountAggregateOutputType> | number
+          }
+        }
+      }
+      RevokedRefreshToken: {
+        payload: Prisma.$RevokedRefreshTokenPayload<ExtArgs>
+        fields: Prisma.RevokedRefreshTokenFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.RevokedRefreshTokenFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RevokedRefreshTokenPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.RevokedRefreshTokenFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RevokedRefreshTokenPayload>
+          }
+          findFirst: {
+            args: Prisma.RevokedRefreshTokenFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RevokedRefreshTokenPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.RevokedRefreshTokenFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RevokedRefreshTokenPayload>
+          }
+          findMany: {
+            args: Prisma.RevokedRefreshTokenFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RevokedRefreshTokenPayload>[]
+          }
+          create: {
+            args: Prisma.RevokedRefreshTokenCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RevokedRefreshTokenPayload>
+          }
+          createMany: {
+            args: Prisma.RevokedRefreshTokenCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.RevokedRefreshTokenCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RevokedRefreshTokenPayload>[]
+          }
+          delete: {
+            args: Prisma.RevokedRefreshTokenDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RevokedRefreshTokenPayload>
+          }
+          update: {
+            args: Prisma.RevokedRefreshTokenUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RevokedRefreshTokenPayload>
+          }
+          deleteMany: {
+            args: Prisma.RevokedRefreshTokenDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.RevokedRefreshTokenUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.RevokedRefreshTokenUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RevokedRefreshTokenPayload>
+          }
+          aggregate: {
+            args: Prisma.RevokedRefreshTokenAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateRevokedRefreshToken>
+          }
+          groupBy: {
+            args: Prisma.RevokedRefreshTokenGroupByArgs<ExtArgs>
+            result: $Utils.Optional<RevokedRefreshTokenGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.RevokedRefreshTokenCountArgs<ExtArgs>
+            result: $Utils.Optional<RevokedRefreshTokenCountAggregateOutputType> | number
           }
         }
       }
@@ -1192,6 +1278,7 @@ export namespace Prisma {
     executionRecords: number
     auditLogEntries: number
     resolvedOrders: number
+    revokedRefreshTokens: number
   }
 
   export type UserCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -1200,6 +1287,7 @@ export namespace Prisma {
     executionRecords?: boolean | UserCountOutputTypeCountExecutionRecordsArgs
     auditLogEntries?: boolean | UserCountOutputTypeCountAuditLogEntriesArgs
     resolvedOrders?: boolean | UserCountOutputTypeCountResolvedOrdersArgs
+    revokedRefreshTokens?: boolean | UserCountOutputTypeCountRevokedRefreshTokensArgs
   }
 
   // Custom InputTypes
@@ -1246,6 +1334,13 @@ export namespace Prisma {
    */
   export type UserCountOutputTypeCountResolvedOrdersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: OrderWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountRevokedRefreshTokensArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: RevokedRefreshTokenWhereInput
   }
 
 
@@ -1331,6 +1426,7 @@ export namespace Prisma {
     activo: boolean | null
     nombre: string | null
     email: string | null
+    passwordHash: string | null
     createdAt: Date | null
   }
 
@@ -1340,6 +1436,7 @@ export namespace Prisma {
     activo: boolean | null
     nombre: string | null
     email: string | null
+    passwordHash: string | null
     createdAt: Date | null
   }
 
@@ -1349,6 +1446,7 @@ export namespace Prisma {
     activo: number
     nombre: number
     email: number
+    passwordHash: number
     createdAt: number
     _all: number
   }
@@ -1360,6 +1458,7 @@ export namespace Prisma {
     activo?: true
     nombre?: true
     email?: true
+    passwordHash?: true
     createdAt?: true
   }
 
@@ -1369,6 +1468,7 @@ export namespace Prisma {
     activo?: true
     nombre?: true
     email?: true
+    passwordHash?: true
     createdAt?: true
   }
 
@@ -1378,6 +1478,7 @@ export namespace Prisma {
     activo?: true
     nombre?: true
     email?: true
+    passwordHash?: true
     createdAt?: true
     _all?: true
   }
@@ -1460,6 +1561,7 @@ export namespace Prisma {
     activo: boolean
     nombre: string
     email: string
+    passwordHash: string
     createdAt: Date
     _count: UserCountAggregateOutputType | null
     _min: UserMinAggregateOutputType | null
@@ -1486,12 +1588,14 @@ export namespace Prisma {
     activo?: boolean
     nombre?: boolean
     email?: boolean
+    passwordHash?: boolean
     createdAt?: boolean
     ordersAsClient?: boolean | User$ordersAsClientArgs<ExtArgs>
     ordersAsTechnician?: boolean | User$ordersAsTechnicianArgs<ExtArgs>
     executionRecords?: boolean | User$executionRecordsArgs<ExtArgs>
     auditLogEntries?: boolean | User$auditLogEntriesArgs<ExtArgs>
     resolvedOrders?: boolean | User$resolvedOrdersArgs<ExtArgs>
+    revokedRefreshTokens?: boolean | User$revokedRefreshTokensArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["user"]>
 
@@ -1501,6 +1605,7 @@ export namespace Prisma {
     activo?: boolean
     nombre?: boolean
     email?: boolean
+    passwordHash?: boolean
     createdAt?: boolean
   }, ExtArgs["result"]["user"]>
 
@@ -1510,6 +1615,7 @@ export namespace Prisma {
     activo?: boolean
     nombre?: boolean
     email?: boolean
+    passwordHash?: boolean
     createdAt?: boolean
   }
 
@@ -1519,6 +1625,7 @@ export namespace Prisma {
     executionRecords?: boolean | User$executionRecordsArgs<ExtArgs>
     auditLogEntries?: boolean | User$auditLogEntriesArgs<ExtArgs>
     resolvedOrders?: boolean | User$resolvedOrdersArgs<ExtArgs>
+    revokedRefreshTokens?: boolean | User$revokedRefreshTokensArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type UserIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
@@ -1531,6 +1638,7 @@ export namespace Prisma {
       executionRecords: Prisma.$ExecutionRecordPayload<ExtArgs>[]
       auditLogEntries: Prisma.$AuditLogEntryPayload<ExtArgs>[]
       resolvedOrders: Prisma.$OrderPayload<ExtArgs>[]
+      revokedRefreshTokens: Prisma.$RevokedRefreshTokenPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -1538,6 +1646,7 @@ export namespace Prisma {
       activo: boolean
       nombre: string
       email: string
+      passwordHash: string
       createdAt: Date
     }, ExtArgs["result"]["user"]>
     composites: {}
@@ -1908,6 +2017,7 @@ export namespace Prisma {
     executionRecords<T extends User$executionRecordsArgs<ExtArgs> = {}>(args?: Subset<T, User$executionRecordsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ExecutionRecordPayload<ExtArgs>, T, "findMany"> | Null>
     auditLogEntries<T extends User$auditLogEntriesArgs<ExtArgs> = {}>(args?: Subset<T, User$auditLogEntriesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AuditLogEntryPayload<ExtArgs>, T, "findMany"> | Null>
     resolvedOrders<T extends User$resolvedOrdersArgs<ExtArgs> = {}>(args?: Subset<T, User$resolvedOrdersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$OrderPayload<ExtArgs>, T, "findMany"> | Null>
+    revokedRefreshTokens<T extends User$revokedRefreshTokensArgs<ExtArgs> = {}>(args?: Subset<T, User$revokedRefreshTokensArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RevokedRefreshTokenPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1942,6 +2052,7 @@ export namespace Prisma {
     readonly activo: FieldRef<"User", 'Boolean'>
     readonly nombre: FieldRef<"User", 'String'>
     readonly email: FieldRef<"User", 'String'>
+    readonly passwordHash: FieldRef<"User", 'String'>
     readonly createdAt: FieldRef<"User", 'DateTime'>
   }
     
@@ -2355,6 +2466,26 @@ export namespace Prisma {
   }
 
   /**
+   * User.revokedRefreshTokens
+   */
+  export type User$revokedRefreshTokensArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RevokedRefreshToken
+     */
+    select?: RevokedRefreshTokenSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RevokedRefreshTokenInclude<ExtArgs> | null
+    where?: RevokedRefreshTokenWhereInput
+    orderBy?: RevokedRefreshTokenOrderByWithRelationInput | RevokedRefreshTokenOrderByWithRelationInput[]
+    cursor?: RevokedRefreshTokenWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: RevokedRefreshTokenScalarFieldEnum | RevokedRefreshTokenScalarFieldEnum[]
+  }
+
+  /**
    * User without action
    */
   export type UserDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -2366,6 +2497,925 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: UserInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model RevokedRefreshToken
+   */
+
+  export type AggregateRevokedRefreshToken = {
+    _count: RevokedRefreshTokenCountAggregateOutputType | null
+    _min: RevokedRefreshTokenMinAggregateOutputType | null
+    _max: RevokedRefreshTokenMaxAggregateOutputType | null
+  }
+
+  export type RevokedRefreshTokenMinAggregateOutputType = {
+    jti: string | null
+    userId: string | null
+    revokedAt: Date | null
+    expiresAt: Date | null
+  }
+
+  export type RevokedRefreshTokenMaxAggregateOutputType = {
+    jti: string | null
+    userId: string | null
+    revokedAt: Date | null
+    expiresAt: Date | null
+  }
+
+  export type RevokedRefreshTokenCountAggregateOutputType = {
+    jti: number
+    userId: number
+    revokedAt: number
+    expiresAt: number
+    _all: number
+  }
+
+
+  export type RevokedRefreshTokenMinAggregateInputType = {
+    jti?: true
+    userId?: true
+    revokedAt?: true
+    expiresAt?: true
+  }
+
+  export type RevokedRefreshTokenMaxAggregateInputType = {
+    jti?: true
+    userId?: true
+    revokedAt?: true
+    expiresAt?: true
+  }
+
+  export type RevokedRefreshTokenCountAggregateInputType = {
+    jti?: true
+    userId?: true
+    revokedAt?: true
+    expiresAt?: true
+    _all?: true
+  }
+
+  export type RevokedRefreshTokenAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which RevokedRefreshToken to aggregate.
+     */
+    where?: RevokedRefreshTokenWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RevokedRefreshTokens to fetch.
+     */
+    orderBy?: RevokedRefreshTokenOrderByWithRelationInput | RevokedRefreshTokenOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: RevokedRefreshTokenWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RevokedRefreshTokens from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RevokedRefreshTokens.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned RevokedRefreshTokens
+    **/
+    _count?: true | RevokedRefreshTokenCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: RevokedRefreshTokenMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: RevokedRefreshTokenMaxAggregateInputType
+  }
+
+  export type GetRevokedRefreshTokenAggregateType<T extends RevokedRefreshTokenAggregateArgs> = {
+        [P in keyof T & keyof AggregateRevokedRefreshToken]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateRevokedRefreshToken[P]>
+      : GetScalarType<T[P], AggregateRevokedRefreshToken[P]>
+  }
+
+
+
+
+  export type RevokedRefreshTokenGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: RevokedRefreshTokenWhereInput
+    orderBy?: RevokedRefreshTokenOrderByWithAggregationInput | RevokedRefreshTokenOrderByWithAggregationInput[]
+    by: RevokedRefreshTokenScalarFieldEnum[] | RevokedRefreshTokenScalarFieldEnum
+    having?: RevokedRefreshTokenScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: RevokedRefreshTokenCountAggregateInputType | true
+    _min?: RevokedRefreshTokenMinAggregateInputType
+    _max?: RevokedRefreshTokenMaxAggregateInputType
+  }
+
+  export type RevokedRefreshTokenGroupByOutputType = {
+    jti: string
+    userId: string
+    revokedAt: Date
+    expiresAt: Date
+    _count: RevokedRefreshTokenCountAggregateOutputType | null
+    _min: RevokedRefreshTokenMinAggregateOutputType | null
+    _max: RevokedRefreshTokenMaxAggregateOutputType | null
+  }
+
+  type GetRevokedRefreshTokenGroupByPayload<T extends RevokedRefreshTokenGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<RevokedRefreshTokenGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof RevokedRefreshTokenGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], RevokedRefreshTokenGroupByOutputType[P]>
+            : GetScalarType<T[P], RevokedRefreshTokenGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type RevokedRefreshTokenSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    jti?: boolean
+    userId?: boolean
+    revokedAt?: boolean
+    expiresAt?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["revokedRefreshToken"]>
+
+  export type RevokedRefreshTokenSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    jti?: boolean
+    userId?: boolean
+    revokedAt?: boolean
+    expiresAt?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["revokedRefreshToken"]>
+
+  export type RevokedRefreshTokenSelectScalar = {
+    jti?: boolean
+    userId?: boolean
+    revokedAt?: boolean
+    expiresAt?: boolean
+  }
+
+  export type RevokedRefreshTokenInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+  export type RevokedRefreshTokenIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+
+  export type $RevokedRefreshTokenPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "RevokedRefreshToken"
+    objects: {
+      user: Prisma.$UserPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      jti: string
+      userId: string
+      revokedAt: Date
+      expiresAt: Date
+    }, ExtArgs["result"]["revokedRefreshToken"]>
+    composites: {}
+  }
+
+  type RevokedRefreshTokenGetPayload<S extends boolean | null | undefined | RevokedRefreshTokenDefaultArgs> = $Result.GetResult<Prisma.$RevokedRefreshTokenPayload, S>
+
+  type RevokedRefreshTokenCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<RevokedRefreshTokenFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: RevokedRefreshTokenCountAggregateInputType | true
+    }
+
+  export interface RevokedRefreshTokenDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['RevokedRefreshToken'], meta: { name: 'RevokedRefreshToken' } }
+    /**
+     * Find zero or one RevokedRefreshToken that matches the filter.
+     * @param {RevokedRefreshTokenFindUniqueArgs} args - Arguments to find a RevokedRefreshToken
+     * @example
+     * // Get one RevokedRefreshToken
+     * const revokedRefreshToken = await prisma.revokedRefreshToken.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends RevokedRefreshTokenFindUniqueArgs>(args: SelectSubset<T, RevokedRefreshTokenFindUniqueArgs<ExtArgs>>): Prisma__RevokedRefreshTokenClient<$Result.GetResult<Prisma.$RevokedRefreshTokenPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one RevokedRefreshToken that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {RevokedRefreshTokenFindUniqueOrThrowArgs} args - Arguments to find a RevokedRefreshToken
+     * @example
+     * // Get one RevokedRefreshToken
+     * const revokedRefreshToken = await prisma.revokedRefreshToken.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends RevokedRefreshTokenFindUniqueOrThrowArgs>(args: SelectSubset<T, RevokedRefreshTokenFindUniqueOrThrowArgs<ExtArgs>>): Prisma__RevokedRefreshTokenClient<$Result.GetResult<Prisma.$RevokedRefreshTokenPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first RevokedRefreshToken that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RevokedRefreshTokenFindFirstArgs} args - Arguments to find a RevokedRefreshToken
+     * @example
+     * // Get one RevokedRefreshToken
+     * const revokedRefreshToken = await prisma.revokedRefreshToken.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends RevokedRefreshTokenFindFirstArgs>(args?: SelectSubset<T, RevokedRefreshTokenFindFirstArgs<ExtArgs>>): Prisma__RevokedRefreshTokenClient<$Result.GetResult<Prisma.$RevokedRefreshTokenPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first RevokedRefreshToken that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RevokedRefreshTokenFindFirstOrThrowArgs} args - Arguments to find a RevokedRefreshToken
+     * @example
+     * // Get one RevokedRefreshToken
+     * const revokedRefreshToken = await prisma.revokedRefreshToken.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends RevokedRefreshTokenFindFirstOrThrowArgs>(args?: SelectSubset<T, RevokedRefreshTokenFindFirstOrThrowArgs<ExtArgs>>): Prisma__RevokedRefreshTokenClient<$Result.GetResult<Prisma.$RevokedRefreshTokenPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more RevokedRefreshTokens that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RevokedRefreshTokenFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all RevokedRefreshTokens
+     * const revokedRefreshTokens = await prisma.revokedRefreshToken.findMany()
+     * 
+     * // Get first 10 RevokedRefreshTokens
+     * const revokedRefreshTokens = await prisma.revokedRefreshToken.findMany({ take: 10 })
+     * 
+     * // Only select the `jti`
+     * const revokedRefreshTokenWithJtiOnly = await prisma.revokedRefreshToken.findMany({ select: { jti: true } })
+     * 
+     */
+    findMany<T extends RevokedRefreshTokenFindManyArgs>(args?: SelectSubset<T, RevokedRefreshTokenFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RevokedRefreshTokenPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a RevokedRefreshToken.
+     * @param {RevokedRefreshTokenCreateArgs} args - Arguments to create a RevokedRefreshToken.
+     * @example
+     * // Create one RevokedRefreshToken
+     * const RevokedRefreshToken = await prisma.revokedRefreshToken.create({
+     *   data: {
+     *     // ... data to create a RevokedRefreshToken
+     *   }
+     * })
+     * 
+     */
+    create<T extends RevokedRefreshTokenCreateArgs>(args: SelectSubset<T, RevokedRefreshTokenCreateArgs<ExtArgs>>): Prisma__RevokedRefreshTokenClient<$Result.GetResult<Prisma.$RevokedRefreshTokenPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many RevokedRefreshTokens.
+     * @param {RevokedRefreshTokenCreateManyArgs} args - Arguments to create many RevokedRefreshTokens.
+     * @example
+     * // Create many RevokedRefreshTokens
+     * const revokedRefreshToken = await prisma.revokedRefreshToken.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends RevokedRefreshTokenCreateManyArgs>(args?: SelectSubset<T, RevokedRefreshTokenCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many RevokedRefreshTokens and returns the data saved in the database.
+     * @param {RevokedRefreshTokenCreateManyAndReturnArgs} args - Arguments to create many RevokedRefreshTokens.
+     * @example
+     * // Create many RevokedRefreshTokens
+     * const revokedRefreshToken = await prisma.revokedRefreshToken.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many RevokedRefreshTokens and only return the `jti`
+     * const revokedRefreshTokenWithJtiOnly = await prisma.revokedRefreshToken.createManyAndReturn({ 
+     *   select: { jti: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends RevokedRefreshTokenCreateManyAndReturnArgs>(args?: SelectSubset<T, RevokedRefreshTokenCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RevokedRefreshTokenPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a RevokedRefreshToken.
+     * @param {RevokedRefreshTokenDeleteArgs} args - Arguments to delete one RevokedRefreshToken.
+     * @example
+     * // Delete one RevokedRefreshToken
+     * const RevokedRefreshToken = await prisma.revokedRefreshToken.delete({
+     *   where: {
+     *     // ... filter to delete one RevokedRefreshToken
+     *   }
+     * })
+     * 
+     */
+    delete<T extends RevokedRefreshTokenDeleteArgs>(args: SelectSubset<T, RevokedRefreshTokenDeleteArgs<ExtArgs>>): Prisma__RevokedRefreshTokenClient<$Result.GetResult<Prisma.$RevokedRefreshTokenPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one RevokedRefreshToken.
+     * @param {RevokedRefreshTokenUpdateArgs} args - Arguments to update one RevokedRefreshToken.
+     * @example
+     * // Update one RevokedRefreshToken
+     * const revokedRefreshToken = await prisma.revokedRefreshToken.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends RevokedRefreshTokenUpdateArgs>(args: SelectSubset<T, RevokedRefreshTokenUpdateArgs<ExtArgs>>): Prisma__RevokedRefreshTokenClient<$Result.GetResult<Prisma.$RevokedRefreshTokenPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more RevokedRefreshTokens.
+     * @param {RevokedRefreshTokenDeleteManyArgs} args - Arguments to filter RevokedRefreshTokens to delete.
+     * @example
+     * // Delete a few RevokedRefreshTokens
+     * const { count } = await prisma.revokedRefreshToken.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends RevokedRefreshTokenDeleteManyArgs>(args?: SelectSubset<T, RevokedRefreshTokenDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more RevokedRefreshTokens.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RevokedRefreshTokenUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many RevokedRefreshTokens
+     * const revokedRefreshToken = await prisma.revokedRefreshToken.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends RevokedRefreshTokenUpdateManyArgs>(args: SelectSubset<T, RevokedRefreshTokenUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one RevokedRefreshToken.
+     * @param {RevokedRefreshTokenUpsertArgs} args - Arguments to update or create a RevokedRefreshToken.
+     * @example
+     * // Update or create a RevokedRefreshToken
+     * const revokedRefreshToken = await prisma.revokedRefreshToken.upsert({
+     *   create: {
+     *     // ... data to create a RevokedRefreshToken
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the RevokedRefreshToken we want to update
+     *   }
+     * })
+     */
+    upsert<T extends RevokedRefreshTokenUpsertArgs>(args: SelectSubset<T, RevokedRefreshTokenUpsertArgs<ExtArgs>>): Prisma__RevokedRefreshTokenClient<$Result.GetResult<Prisma.$RevokedRefreshTokenPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of RevokedRefreshTokens.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RevokedRefreshTokenCountArgs} args - Arguments to filter RevokedRefreshTokens to count.
+     * @example
+     * // Count the number of RevokedRefreshTokens
+     * const count = await prisma.revokedRefreshToken.count({
+     *   where: {
+     *     // ... the filter for the RevokedRefreshTokens we want to count
+     *   }
+     * })
+    **/
+    count<T extends RevokedRefreshTokenCountArgs>(
+      args?: Subset<T, RevokedRefreshTokenCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], RevokedRefreshTokenCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a RevokedRefreshToken.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RevokedRefreshTokenAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends RevokedRefreshTokenAggregateArgs>(args: Subset<T, RevokedRefreshTokenAggregateArgs>): Prisma.PrismaPromise<GetRevokedRefreshTokenAggregateType<T>>
+
+    /**
+     * Group by RevokedRefreshToken.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RevokedRefreshTokenGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends RevokedRefreshTokenGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: RevokedRefreshTokenGroupByArgs['orderBy'] }
+        : { orderBy?: RevokedRefreshTokenGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, RevokedRefreshTokenGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetRevokedRefreshTokenGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the RevokedRefreshToken model
+   */
+  readonly fields: RevokedRefreshTokenFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for RevokedRefreshToken.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__RevokedRefreshTokenClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the RevokedRefreshToken model
+   */ 
+  interface RevokedRefreshTokenFieldRefs {
+    readonly jti: FieldRef<"RevokedRefreshToken", 'String'>
+    readonly userId: FieldRef<"RevokedRefreshToken", 'String'>
+    readonly revokedAt: FieldRef<"RevokedRefreshToken", 'DateTime'>
+    readonly expiresAt: FieldRef<"RevokedRefreshToken", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * RevokedRefreshToken findUnique
+   */
+  export type RevokedRefreshTokenFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RevokedRefreshToken
+     */
+    select?: RevokedRefreshTokenSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RevokedRefreshTokenInclude<ExtArgs> | null
+    /**
+     * Filter, which RevokedRefreshToken to fetch.
+     */
+    where: RevokedRefreshTokenWhereUniqueInput
+  }
+
+  /**
+   * RevokedRefreshToken findUniqueOrThrow
+   */
+  export type RevokedRefreshTokenFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RevokedRefreshToken
+     */
+    select?: RevokedRefreshTokenSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RevokedRefreshTokenInclude<ExtArgs> | null
+    /**
+     * Filter, which RevokedRefreshToken to fetch.
+     */
+    where: RevokedRefreshTokenWhereUniqueInput
+  }
+
+  /**
+   * RevokedRefreshToken findFirst
+   */
+  export type RevokedRefreshTokenFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RevokedRefreshToken
+     */
+    select?: RevokedRefreshTokenSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RevokedRefreshTokenInclude<ExtArgs> | null
+    /**
+     * Filter, which RevokedRefreshToken to fetch.
+     */
+    where?: RevokedRefreshTokenWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RevokedRefreshTokens to fetch.
+     */
+    orderBy?: RevokedRefreshTokenOrderByWithRelationInput | RevokedRefreshTokenOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for RevokedRefreshTokens.
+     */
+    cursor?: RevokedRefreshTokenWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RevokedRefreshTokens from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RevokedRefreshTokens.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of RevokedRefreshTokens.
+     */
+    distinct?: RevokedRefreshTokenScalarFieldEnum | RevokedRefreshTokenScalarFieldEnum[]
+  }
+
+  /**
+   * RevokedRefreshToken findFirstOrThrow
+   */
+  export type RevokedRefreshTokenFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RevokedRefreshToken
+     */
+    select?: RevokedRefreshTokenSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RevokedRefreshTokenInclude<ExtArgs> | null
+    /**
+     * Filter, which RevokedRefreshToken to fetch.
+     */
+    where?: RevokedRefreshTokenWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RevokedRefreshTokens to fetch.
+     */
+    orderBy?: RevokedRefreshTokenOrderByWithRelationInput | RevokedRefreshTokenOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for RevokedRefreshTokens.
+     */
+    cursor?: RevokedRefreshTokenWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RevokedRefreshTokens from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RevokedRefreshTokens.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of RevokedRefreshTokens.
+     */
+    distinct?: RevokedRefreshTokenScalarFieldEnum | RevokedRefreshTokenScalarFieldEnum[]
+  }
+
+  /**
+   * RevokedRefreshToken findMany
+   */
+  export type RevokedRefreshTokenFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RevokedRefreshToken
+     */
+    select?: RevokedRefreshTokenSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RevokedRefreshTokenInclude<ExtArgs> | null
+    /**
+     * Filter, which RevokedRefreshTokens to fetch.
+     */
+    where?: RevokedRefreshTokenWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RevokedRefreshTokens to fetch.
+     */
+    orderBy?: RevokedRefreshTokenOrderByWithRelationInput | RevokedRefreshTokenOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing RevokedRefreshTokens.
+     */
+    cursor?: RevokedRefreshTokenWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RevokedRefreshTokens from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RevokedRefreshTokens.
+     */
+    skip?: number
+    distinct?: RevokedRefreshTokenScalarFieldEnum | RevokedRefreshTokenScalarFieldEnum[]
+  }
+
+  /**
+   * RevokedRefreshToken create
+   */
+  export type RevokedRefreshTokenCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RevokedRefreshToken
+     */
+    select?: RevokedRefreshTokenSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RevokedRefreshTokenInclude<ExtArgs> | null
+    /**
+     * The data needed to create a RevokedRefreshToken.
+     */
+    data: XOR<RevokedRefreshTokenCreateInput, RevokedRefreshTokenUncheckedCreateInput>
+  }
+
+  /**
+   * RevokedRefreshToken createMany
+   */
+  export type RevokedRefreshTokenCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many RevokedRefreshTokens.
+     */
+    data: RevokedRefreshTokenCreateManyInput | RevokedRefreshTokenCreateManyInput[]
+  }
+
+  /**
+   * RevokedRefreshToken createManyAndReturn
+   */
+  export type RevokedRefreshTokenCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RevokedRefreshToken
+     */
+    select?: RevokedRefreshTokenSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many RevokedRefreshTokens.
+     */
+    data: RevokedRefreshTokenCreateManyInput | RevokedRefreshTokenCreateManyInput[]
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RevokedRefreshTokenIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * RevokedRefreshToken update
+   */
+  export type RevokedRefreshTokenUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RevokedRefreshToken
+     */
+    select?: RevokedRefreshTokenSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RevokedRefreshTokenInclude<ExtArgs> | null
+    /**
+     * The data needed to update a RevokedRefreshToken.
+     */
+    data: XOR<RevokedRefreshTokenUpdateInput, RevokedRefreshTokenUncheckedUpdateInput>
+    /**
+     * Choose, which RevokedRefreshToken to update.
+     */
+    where: RevokedRefreshTokenWhereUniqueInput
+  }
+
+  /**
+   * RevokedRefreshToken updateMany
+   */
+  export type RevokedRefreshTokenUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update RevokedRefreshTokens.
+     */
+    data: XOR<RevokedRefreshTokenUpdateManyMutationInput, RevokedRefreshTokenUncheckedUpdateManyInput>
+    /**
+     * Filter which RevokedRefreshTokens to update
+     */
+    where?: RevokedRefreshTokenWhereInput
+  }
+
+  /**
+   * RevokedRefreshToken upsert
+   */
+  export type RevokedRefreshTokenUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RevokedRefreshToken
+     */
+    select?: RevokedRefreshTokenSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RevokedRefreshTokenInclude<ExtArgs> | null
+    /**
+     * The filter to search for the RevokedRefreshToken to update in case it exists.
+     */
+    where: RevokedRefreshTokenWhereUniqueInput
+    /**
+     * In case the RevokedRefreshToken found by the `where` argument doesn't exist, create a new RevokedRefreshToken with this data.
+     */
+    create: XOR<RevokedRefreshTokenCreateInput, RevokedRefreshTokenUncheckedCreateInput>
+    /**
+     * In case the RevokedRefreshToken was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<RevokedRefreshTokenUpdateInput, RevokedRefreshTokenUncheckedUpdateInput>
+  }
+
+  /**
+   * RevokedRefreshToken delete
+   */
+  export type RevokedRefreshTokenDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RevokedRefreshToken
+     */
+    select?: RevokedRefreshTokenSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RevokedRefreshTokenInclude<ExtArgs> | null
+    /**
+     * Filter which RevokedRefreshToken to delete.
+     */
+    where: RevokedRefreshTokenWhereUniqueInput
+  }
+
+  /**
+   * RevokedRefreshToken deleteMany
+   */
+  export type RevokedRefreshTokenDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which RevokedRefreshTokens to delete
+     */
+    where?: RevokedRefreshTokenWhereInput
+  }
+
+  /**
+   * RevokedRefreshToken without action
+   */
+  export type RevokedRefreshTokenDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RevokedRefreshToken
+     */
+    select?: RevokedRefreshTokenSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RevokedRefreshTokenInclude<ExtArgs> | null
   }
 
 
@@ -6447,10 +7497,21 @@ export namespace Prisma {
     activo: 'activo',
     nombre: 'nombre',
     email: 'email',
+    passwordHash: 'passwordHash',
     createdAt: 'createdAt'
   };
 
   export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
+
+
+  export const RevokedRefreshTokenScalarFieldEnum: {
+    jti: 'jti',
+    userId: 'userId',
+    revokedAt: 'revokedAt',
+    expiresAt: 'expiresAt'
+  };
+
+  export type RevokedRefreshTokenScalarFieldEnum = (typeof RevokedRefreshTokenScalarFieldEnum)[keyof typeof RevokedRefreshTokenScalarFieldEnum]
 
 
   export const OrderScalarFieldEnum: {
@@ -6577,12 +7638,14 @@ export namespace Prisma {
     activo?: BoolFilter<"User"> | boolean
     nombre?: StringFilter<"User"> | string
     email?: StringFilter<"User"> | string
+    passwordHash?: StringFilter<"User"> | string
     createdAt?: DateTimeFilter<"User"> | Date | string
     ordersAsClient?: OrderListRelationFilter
     ordersAsTechnician?: OrderListRelationFilter
     executionRecords?: ExecutionRecordListRelationFilter
     auditLogEntries?: AuditLogEntryListRelationFilter
     resolvedOrders?: OrderListRelationFilter
+    revokedRefreshTokens?: RevokedRefreshTokenListRelationFilter
   }
 
   export type UserOrderByWithRelationInput = {
@@ -6591,12 +7654,14 @@ export namespace Prisma {
     activo?: SortOrder
     nombre?: SortOrder
     email?: SortOrder
+    passwordHash?: SortOrder
     createdAt?: SortOrder
     ordersAsClient?: OrderOrderByRelationAggregateInput
     ordersAsTechnician?: OrderOrderByRelationAggregateInput
     executionRecords?: ExecutionRecordOrderByRelationAggregateInput
     auditLogEntries?: AuditLogEntryOrderByRelationAggregateInput
     resolvedOrders?: OrderOrderByRelationAggregateInput
+    revokedRefreshTokens?: RevokedRefreshTokenOrderByRelationAggregateInput
   }
 
   export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -6608,12 +7673,14 @@ export namespace Prisma {
     role?: StringFilter<"User"> | string
     activo?: BoolFilter<"User"> | boolean
     nombre?: StringFilter<"User"> | string
+    passwordHash?: StringFilter<"User"> | string
     createdAt?: DateTimeFilter<"User"> | Date | string
     ordersAsClient?: OrderListRelationFilter
     ordersAsTechnician?: OrderListRelationFilter
     executionRecords?: ExecutionRecordListRelationFilter
     auditLogEntries?: AuditLogEntryListRelationFilter
     resolvedOrders?: OrderListRelationFilter
+    revokedRefreshTokens?: RevokedRefreshTokenListRelationFilter
   }, "id" | "email">
 
   export type UserOrderByWithAggregationInput = {
@@ -6622,6 +7689,7 @@ export namespace Prisma {
     activo?: SortOrder
     nombre?: SortOrder
     email?: SortOrder
+    passwordHash?: SortOrder
     createdAt?: SortOrder
     _count?: UserCountOrderByAggregateInput
     _max?: UserMaxOrderByAggregateInput
@@ -6637,7 +7705,58 @@ export namespace Prisma {
     activo?: BoolWithAggregatesFilter<"User"> | boolean
     nombre?: StringWithAggregatesFilter<"User"> | string
     email?: StringWithAggregatesFilter<"User"> | string
+    passwordHash?: StringWithAggregatesFilter<"User"> | string
     createdAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
+  }
+
+  export type RevokedRefreshTokenWhereInput = {
+    AND?: RevokedRefreshTokenWhereInput | RevokedRefreshTokenWhereInput[]
+    OR?: RevokedRefreshTokenWhereInput[]
+    NOT?: RevokedRefreshTokenWhereInput | RevokedRefreshTokenWhereInput[]
+    jti?: StringFilter<"RevokedRefreshToken"> | string
+    userId?: StringFilter<"RevokedRefreshToken"> | string
+    revokedAt?: DateTimeFilter<"RevokedRefreshToken"> | Date | string
+    expiresAt?: DateTimeFilter<"RevokedRefreshToken"> | Date | string
+    user?: XOR<UserRelationFilter, UserWhereInput>
+  }
+
+  export type RevokedRefreshTokenOrderByWithRelationInput = {
+    jti?: SortOrder
+    userId?: SortOrder
+    revokedAt?: SortOrder
+    expiresAt?: SortOrder
+    user?: UserOrderByWithRelationInput
+  }
+
+  export type RevokedRefreshTokenWhereUniqueInput = Prisma.AtLeast<{
+    jti?: string
+    AND?: RevokedRefreshTokenWhereInput | RevokedRefreshTokenWhereInput[]
+    OR?: RevokedRefreshTokenWhereInput[]
+    NOT?: RevokedRefreshTokenWhereInput | RevokedRefreshTokenWhereInput[]
+    userId?: StringFilter<"RevokedRefreshToken"> | string
+    revokedAt?: DateTimeFilter<"RevokedRefreshToken"> | Date | string
+    expiresAt?: DateTimeFilter<"RevokedRefreshToken"> | Date | string
+    user?: XOR<UserRelationFilter, UserWhereInput>
+  }, "jti">
+
+  export type RevokedRefreshTokenOrderByWithAggregationInput = {
+    jti?: SortOrder
+    userId?: SortOrder
+    revokedAt?: SortOrder
+    expiresAt?: SortOrder
+    _count?: RevokedRefreshTokenCountOrderByAggregateInput
+    _max?: RevokedRefreshTokenMaxOrderByAggregateInput
+    _min?: RevokedRefreshTokenMinOrderByAggregateInput
+  }
+
+  export type RevokedRefreshTokenScalarWhereWithAggregatesInput = {
+    AND?: RevokedRefreshTokenScalarWhereWithAggregatesInput | RevokedRefreshTokenScalarWhereWithAggregatesInput[]
+    OR?: RevokedRefreshTokenScalarWhereWithAggregatesInput[]
+    NOT?: RevokedRefreshTokenScalarWhereWithAggregatesInput | RevokedRefreshTokenScalarWhereWithAggregatesInput[]
+    jti?: StringWithAggregatesFilter<"RevokedRefreshToken"> | string
+    userId?: StringWithAggregatesFilter<"RevokedRefreshToken"> | string
+    revokedAt?: DateTimeWithAggregatesFilter<"RevokedRefreshToken"> | Date | string
+    expiresAt?: DateTimeWithAggregatesFilter<"RevokedRefreshToken"> | Date | string
   }
 
   export type OrderWhereInput = {
@@ -6951,12 +8070,14 @@ export namespace Prisma {
     activo?: boolean
     nombre: string
     email: string
+    passwordHash: string
     createdAt?: Date | string
     ordersAsClient?: OrderCreateNestedManyWithoutClientInput
     ordersAsTechnician?: OrderCreateNestedManyWithoutTechnicianInput
     executionRecords?: ExecutionRecordCreateNestedManyWithoutTechnicianInput
     auditLogEntries?: AuditLogEntryCreateNestedManyWithoutActorInput
     resolvedOrders?: OrderCreateNestedManyWithoutResolvedByInput
+    revokedRefreshTokens?: RevokedRefreshTokenCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateInput = {
@@ -6965,12 +8086,14 @@ export namespace Prisma {
     activo?: boolean
     nombre: string
     email: string
+    passwordHash: string
     createdAt?: Date | string
     ordersAsClient?: OrderUncheckedCreateNestedManyWithoutClientInput
     ordersAsTechnician?: OrderUncheckedCreateNestedManyWithoutTechnicianInput
     executionRecords?: ExecutionRecordUncheckedCreateNestedManyWithoutTechnicianInput
     auditLogEntries?: AuditLogEntryUncheckedCreateNestedManyWithoutActorInput
     resolvedOrders?: OrderUncheckedCreateNestedManyWithoutResolvedByInput
+    revokedRefreshTokens?: RevokedRefreshTokenUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserUpdateInput = {
@@ -6979,12 +8102,14 @@ export namespace Prisma {
     activo?: BoolFieldUpdateOperationsInput | boolean
     nombre?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     ordersAsClient?: OrderUpdateManyWithoutClientNestedInput
     ordersAsTechnician?: OrderUpdateManyWithoutTechnicianNestedInput
     executionRecords?: ExecutionRecordUpdateManyWithoutTechnicianNestedInput
     auditLogEntries?: AuditLogEntryUpdateManyWithoutActorNestedInput
     resolvedOrders?: OrderUpdateManyWithoutResolvedByNestedInput
+    revokedRefreshTokens?: RevokedRefreshTokenUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateInput = {
@@ -6993,12 +8118,14 @@ export namespace Prisma {
     activo?: BoolFieldUpdateOperationsInput | boolean
     nombre?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     ordersAsClient?: OrderUncheckedUpdateManyWithoutClientNestedInput
     ordersAsTechnician?: OrderUncheckedUpdateManyWithoutTechnicianNestedInput
     executionRecords?: ExecutionRecordUncheckedUpdateManyWithoutTechnicianNestedInput
     auditLogEntries?: AuditLogEntryUncheckedUpdateManyWithoutActorNestedInput
     resolvedOrders?: OrderUncheckedUpdateManyWithoutResolvedByNestedInput
+    revokedRefreshTokens?: RevokedRefreshTokenUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateManyInput = {
@@ -7007,6 +8134,7 @@ export namespace Prisma {
     activo?: boolean
     nombre: string
     email: string
+    passwordHash: string
     createdAt?: Date | string
   }
 
@@ -7016,6 +8144,7 @@ export namespace Prisma {
     activo?: BoolFieldUpdateOperationsInput | boolean
     nombre?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -7025,7 +8154,56 @@ export namespace Prisma {
     activo?: BoolFieldUpdateOperationsInput | boolean
     nombre?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RevokedRefreshTokenCreateInput = {
+    jti: string
+    revokedAt?: Date | string
+    expiresAt: Date | string
+    user: UserCreateNestedOneWithoutRevokedRefreshTokensInput
+  }
+
+  export type RevokedRefreshTokenUncheckedCreateInput = {
+    jti: string
+    userId: string
+    revokedAt?: Date | string
+    expiresAt: Date | string
+  }
+
+  export type RevokedRefreshTokenUpdateInput = {
+    jti?: StringFieldUpdateOperationsInput | string
+    revokedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutRevokedRefreshTokensNestedInput
+  }
+
+  export type RevokedRefreshTokenUncheckedUpdateInput = {
+    jti?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    revokedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RevokedRefreshTokenCreateManyInput = {
+    jti: string
+    userId: string
+    revokedAt?: Date | string
+    expiresAt: Date | string
+  }
+
+  export type RevokedRefreshTokenUpdateManyMutationInput = {
+    jti?: StringFieldUpdateOperationsInput | string
+    revokedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RevokedRefreshTokenUncheckedUpdateManyInput = {
+    jti?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    revokedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type OrderCreateInput = {
@@ -7388,6 +8566,12 @@ export namespace Prisma {
     none?: AuditLogEntryWhereInput
   }
 
+  export type RevokedRefreshTokenListRelationFilter = {
+    every?: RevokedRefreshTokenWhereInput
+    some?: RevokedRefreshTokenWhereInput
+    none?: RevokedRefreshTokenWhereInput
+  }
+
   export type OrderOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -7400,12 +8584,17 @@ export namespace Prisma {
     _count?: SortOrder
   }
 
+  export type RevokedRefreshTokenOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
   export type UserCountOrderByAggregateInput = {
     id?: SortOrder
     role?: SortOrder
     activo?: SortOrder
     nombre?: SortOrder
     email?: SortOrder
+    passwordHash?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -7415,6 +8604,7 @@ export namespace Prisma {
     activo?: SortOrder
     nombre?: SortOrder
     email?: SortOrder
+    passwordHash?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -7424,6 +8614,7 @@ export namespace Prisma {
     activo?: SortOrder
     nombre?: SortOrder
     email?: SortOrder
+    passwordHash?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -7466,6 +8657,32 @@ export namespace Prisma {
     _max?: NestedDateTimeFilter<$PrismaModel>
   }
 
+  export type UserRelationFilter = {
+    is?: UserWhereInput
+    isNot?: UserWhereInput
+  }
+
+  export type RevokedRefreshTokenCountOrderByAggregateInput = {
+    jti?: SortOrder
+    userId?: SortOrder
+    revokedAt?: SortOrder
+    expiresAt?: SortOrder
+  }
+
+  export type RevokedRefreshTokenMaxOrderByAggregateInput = {
+    jti?: SortOrder
+    userId?: SortOrder
+    revokedAt?: SortOrder
+    expiresAt?: SortOrder
+  }
+
+  export type RevokedRefreshTokenMinOrderByAggregateInput = {
+    jti?: SortOrder
+    userId?: SortOrder
+    revokedAt?: SortOrder
+    expiresAt?: SortOrder
+  }
+
   export type StringNullableFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel> | null
     in?: string[] | null
@@ -7500,11 +8717,6 @@ export namespace Prisma {
     gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
-  }
-
-  export type UserRelationFilter = {
-    is?: UserWhereInput
-    isNot?: UserWhereInput
   }
 
   export type UserNullableRelationFilter = {
@@ -7772,6 +8984,13 @@ export namespace Prisma {
     connect?: OrderWhereUniqueInput | OrderWhereUniqueInput[]
   }
 
+  export type RevokedRefreshTokenCreateNestedManyWithoutUserInput = {
+    create?: XOR<RevokedRefreshTokenCreateWithoutUserInput, RevokedRefreshTokenUncheckedCreateWithoutUserInput> | RevokedRefreshTokenCreateWithoutUserInput[] | RevokedRefreshTokenUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: RevokedRefreshTokenCreateOrConnectWithoutUserInput | RevokedRefreshTokenCreateOrConnectWithoutUserInput[]
+    createMany?: RevokedRefreshTokenCreateManyUserInputEnvelope
+    connect?: RevokedRefreshTokenWhereUniqueInput | RevokedRefreshTokenWhereUniqueInput[]
+  }
+
   export type OrderUncheckedCreateNestedManyWithoutClientInput = {
     create?: XOR<OrderCreateWithoutClientInput, OrderUncheckedCreateWithoutClientInput> | OrderCreateWithoutClientInput[] | OrderUncheckedCreateWithoutClientInput[]
     connectOrCreate?: OrderCreateOrConnectWithoutClientInput | OrderCreateOrConnectWithoutClientInput[]
@@ -7805,6 +9024,13 @@ export namespace Prisma {
     connectOrCreate?: OrderCreateOrConnectWithoutResolvedByInput | OrderCreateOrConnectWithoutResolvedByInput[]
     createMany?: OrderCreateManyResolvedByInputEnvelope
     connect?: OrderWhereUniqueInput | OrderWhereUniqueInput[]
+  }
+
+  export type RevokedRefreshTokenUncheckedCreateNestedManyWithoutUserInput = {
+    create?: XOR<RevokedRefreshTokenCreateWithoutUserInput, RevokedRefreshTokenUncheckedCreateWithoutUserInput> | RevokedRefreshTokenCreateWithoutUserInput[] | RevokedRefreshTokenUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: RevokedRefreshTokenCreateOrConnectWithoutUserInput | RevokedRefreshTokenCreateOrConnectWithoutUserInput[]
+    createMany?: RevokedRefreshTokenCreateManyUserInputEnvelope
+    connect?: RevokedRefreshTokenWhereUniqueInput | RevokedRefreshTokenWhereUniqueInput[]
   }
 
   export type StringFieldUpdateOperationsInput = {
@@ -7889,6 +9115,20 @@ export namespace Prisma {
     deleteMany?: OrderScalarWhereInput | OrderScalarWhereInput[]
   }
 
+  export type RevokedRefreshTokenUpdateManyWithoutUserNestedInput = {
+    create?: XOR<RevokedRefreshTokenCreateWithoutUserInput, RevokedRefreshTokenUncheckedCreateWithoutUserInput> | RevokedRefreshTokenCreateWithoutUserInput[] | RevokedRefreshTokenUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: RevokedRefreshTokenCreateOrConnectWithoutUserInput | RevokedRefreshTokenCreateOrConnectWithoutUserInput[]
+    upsert?: RevokedRefreshTokenUpsertWithWhereUniqueWithoutUserInput | RevokedRefreshTokenUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: RevokedRefreshTokenCreateManyUserInputEnvelope
+    set?: RevokedRefreshTokenWhereUniqueInput | RevokedRefreshTokenWhereUniqueInput[]
+    disconnect?: RevokedRefreshTokenWhereUniqueInput | RevokedRefreshTokenWhereUniqueInput[]
+    delete?: RevokedRefreshTokenWhereUniqueInput | RevokedRefreshTokenWhereUniqueInput[]
+    connect?: RevokedRefreshTokenWhereUniqueInput | RevokedRefreshTokenWhereUniqueInput[]
+    update?: RevokedRefreshTokenUpdateWithWhereUniqueWithoutUserInput | RevokedRefreshTokenUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: RevokedRefreshTokenUpdateManyWithWhereWithoutUserInput | RevokedRefreshTokenUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: RevokedRefreshTokenScalarWhereInput | RevokedRefreshTokenScalarWhereInput[]
+  }
+
   export type OrderUncheckedUpdateManyWithoutClientNestedInput = {
     create?: XOR<OrderCreateWithoutClientInput, OrderUncheckedCreateWithoutClientInput> | OrderCreateWithoutClientInput[] | OrderUncheckedCreateWithoutClientInput[]
     connectOrCreate?: OrderCreateOrConnectWithoutClientInput | OrderCreateOrConnectWithoutClientInput[]
@@ -7957,6 +9197,34 @@ export namespace Prisma {
     update?: OrderUpdateWithWhereUniqueWithoutResolvedByInput | OrderUpdateWithWhereUniqueWithoutResolvedByInput[]
     updateMany?: OrderUpdateManyWithWhereWithoutResolvedByInput | OrderUpdateManyWithWhereWithoutResolvedByInput[]
     deleteMany?: OrderScalarWhereInput | OrderScalarWhereInput[]
+  }
+
+  export type RevokedRefreshTokenUncheckedUpdateManyWithoutUserNestedInput = {
+    create?: XOR<RevokedRefreshTokenCreateWithoutUserInput, RevokedRefreshTokenUncheckedCreateWithoutUserInput> | RevokedRefreshTokenCreateWithoutUserInput[] | RevokedRefreshTokenUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: RevokedRefreshTokenCreateOrConnectWithoutUserInput | RevokedRefreshTokenCreateOrConnectWithoutUserInput[]
+    upsert?: RevokedRefreshTokenUpsertWithWhereUniqueWithoutUserInput | RevokedRefreshTokenUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: RevokedRefreshTokenCreateManyUserInputEnvelope
+    set?: RevokedRefreshTokenWhereUniqueInput | RevokedRefreshTokenWhereUniqueInput[]
+    disconnect?: RevokedRefreshTokenWhereUniqueInput | RevokedRefreshTokenWhereUniqueInput[]
+    delete?: RevokedRefreshTokenWhereUniqueInput | RevokedRefreshTokenWhereUniqueInput[]
+    connect?: RevokedRefreshTokenWhereUniqueInput | RevokedRefreshTokenWhereUniqueInput[]
+    update?: RevokedRefreshTokenUpdateWithWhereUniqueWithoutUserInput | RevokedRefreshTokenUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: RevokedRefreshTokenUpdateManyWithWhereWithoutUserInput | RevokedRefreshTokenUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: RevokedRefreshTokenScalarWhereInput | RevokedRefreshTokenScalarWhereInput[]
+  }
+
+  export type UserCreateNestedOneWithoutRevokedRefreshTokensInput = {
+    create?: XOR<UserCreateWithoutRevokedRefreshTokensInput, UserUncheckedCreateWithoutRevokedRefreshTokensInput>
+    connectOrCreate?: UserCreateOrConnectWithoutRevokedRefreshTokensInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type UserUpdateOneRequiredWithoutRevokedRefreshTokensNestedInput = {
+    create?: XOR<UserCreateWithoutRevokedRefreshTokensInput, UserUncheckedCreateWithoutRevokedRefreshTokensInput>
+    connectOrCreate?: UserCreateOrConnectWithoutRevokedRefreshTokensInput
+    upsert?: UserUpsertWithoutRevokedRefreshTokensInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutRevokedRefreshTokensInput, UserUpdateWithoutRevokedRefreshTokensInput>, UserUncheckedUpdateWithoutRevokedRefreshTokensInput>
   }
 
   export type UserCreateNestedOneWithoutOrdersAsClientInput = {
@@ -8554,6 +9822,27 @@ export namespace Prisma {
     data: OrderCreateManyResolvedByInput | OrderCreateManyResolvedByInput[]
   }
 
+  export type RevokedRefreshTokenCreateWithoutUserInput = {
+    jti: string
+    revokedAt?: Date | string
+    expiresAt: Date | string
+  }
+
+  export type RevokedRefreshTokenUncheckedCreateWithoutUserInput = {
+    jti: string
+    revokedAt?: Date | string
+    expiresAt: Date | string
+  }
+
+  export type RevokedRefreshTokenCreateOrConnectWithoutUserInput = {
+    where: RevokedRefreshTokenWhereUniqueInput
+    create: XOR<RevokedRefreshTokenCreateWithoutUserInput, RevokedRefreshTokenUncheckedCreateWithoutUserInput>
+  }
+
+  export type RevokedRefreshTokenCreateManyUserInputEnvelope = {
+    data: RevokedRefreshTokenCreateManyUserInput | RevokedRefreshTokenCreateManyUserInput[]
+  }
+
   export type OrderUpsertWithWhereUniqueWithoutClientInput = {
     where: OrderWhereUniqueInput
     update: XOR<OrderUpdateWithoutClientInput, OrderUncheckedUpdateWithoutClientInput>
@@ -8677,17 +9966,121 @@ export namespace Prisma {
     data: XOR<OrderUpdateManyMutationInput, OrderUncheckedUpdateManyWithoutResolvedByInput>
   }
 
+  export type RevokedRefreshTokenUpsertWithWhereUniqueWithoutUserInput = {
+    where: RevokedRefreshTokenWhereUniqueInput
+    update: XOR<RevokedRefreshTokenUpdateWithoutUserInput, RevokedRefreshTokenUncheckedUpdateWithoutUserInput>
+    create: XOR<RevokedRefreshTokenCreateWithoutUserInput, RevokedRefreshTokenUncheckedCreateWithoutUserInput>
+  }
+
+  export type RevokedRefreshTokenUpdateWithWhereUniqueWithoutUserInput = {
+    where: RevokedRefreshTokenWhereUniqueInput
+    data: XOR<RevokedRefreshTokenUpdateWithoutUserInput, RevokedRefreshTokenUncheckedUpdateWithoutUserInput>
+  }
+
+  export type RevokedRefreshTokenUpdateManyWithWhereWithoutUserInput = {
+    where: RevokedRefreshTokenScalarWhereInput
+    data: XOR<RevokedRefreshTokenUpdateManyMutationInput, RevokedRefreshTokenUncheckedUpdateManyWithoutUserInput>
+  }
+
+  export type RevokedRefreshTokenScalarWhereInput = {
+    AND?: RevokedRefreshTokenScalarWhereInput | RevokedRefreshTokenScalarWhereInput[]
+    OR?: RevokedRefreshTokenScalarWhereInput[]
+    NOT?: RevokedRefreshTokenScalarWhereInput | RevokedRefreshTokenScalarWhereInput[]
+    jti?: StringFilter<"RevokedRefreshToken"> | string
+    userId?: StringFilter<"RevokedRefreshToken"> | string
+    revokedAt?: DateTimeFilter<"RevokedRefreshToken"> | Date | string
+    expiresAt?: DateTimeFilter<"RevokedRefreshToken"> | Date | string
+  }
+
+  export type UserCreateWithoutRevokedRefreshTokensInput = {
+    id?: string
+    role: string
+    activo?: boolean
+    nombre: string
+    email: string
+    passwordHash: string
+    createdAt?: Date | string
+    ordersAsClient?: OrderCreateNestedManyWithoutClientInput
+    ordersAsTechnician?: OrderCreateNestedManyWithoutTechnicianInput
+    executionRecords?: ExecutionRecordCreateNestedManyWithoutTechnicianInput
+    auditLogEntries?: AuditLogEntryCreateNestedManyWithoutActorInput
+    resolvedOrders?: OrderCreateNestedManyWithoutResolvedByInput
+  }
+
+  export type UserUncheckedCreateWithoutRevokedRefreshTokensInput = {
+    id?: string
+    role: string
+    activo?: boolean
+    nombre: string
+    email: string
+    passwordHash: string
+    createdAt?: Date | string
+    ordersAsClient?: OrderUncheckedCreateNestedManyWithoutClientInput
+    ordersAsTechnician?: OrderUncheckedCreateNestedManyWithoutTechnicianInput
+    executionRecords?: ExecutionRecordUncheckedCreateNestedManyWithoutTechnicianInput
+    auditLogEntries?: AuditLogEntryUncheckedCreateNestedManyWithoutActorInput
+    resolvedOrders?: OrderUncheckedCreateNestedManyWithoutResolvedByInput
+  }
+
+  export type UserCreateOrConnectWithoutRevokedRefreshTokensInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutRevokedRefreshTokensInput, UserUncheckedCreateWithoutRevokedRefreshTokensInput>
+  }
+
+  export type UserUpsertWithoutRevokedRefreshTokensInput = {
+    update: XOR<UserUpdateWithoutRevokedRefreshTokensInput, UserUncheckedUpdateWithoutRevokedRefreshTokensInput>
+    create: XOR<UserCreateWithoutRevokedRefreshTokensInput, UserUncheckedCreateWithoutRevokedRefreshTokensInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutRevokedRefreshTokensInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutRevokedRefreshTokensInput, UserUncheckedUpdateWithoutRevokedRefreshTokensInput>
+  }
+
+  export type UserUpdateWithoutRevokedRefreshTokensInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    role?: StringFieldUpdateOperationsInput | string
+    activo?: BoolFieldUpdateOperationsInput | boolean
+    nombre?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    ordersAsClient?: OrderUpdateManyWithoutClientNestedInput
+    ordersAsTechnician?: OrderUpdateManyWithoutTechnicianNestedInput
+    executionRecords?: ExecutionRecordUpdateManyWithoutTechnicianNestedInput
+    auditLogEntries?: AuditLogEntryUpdateManyWithoutActorNestedInput
+    resolvedOrders?: OrderUpdateManyWithoutResolvedByNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutRevokedRefreshTokensInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    role?: StringFieldUpdateOperationsInput | string
+    activo?: BoolFieldUpdateOperationsInput | boolean
+    nombre?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    ordersAsClient?: OrderUncheckedUpdateManyWithoutClientNestedInput
+    ordersAsTechnician?: OrderUncheckedUpdateManyWithoutTechnicianNestedInput
+    executionRecords?: ExecutionRecordUncheckedUpdateManyWithoutTechnicianNestedInput
+    auditLogEntries?: AuditLogEntryUncheckedUpdateManyWithoutActorNestedInput
+    resolvedOrders?: OrderUncheckedUpdateManyWithoutResolvedByNestedInput
+  }
+
   export type UserCreateWithoutOrdersAsClientInput = {
     id?: string
     role: string
     activo?: boolean
     nombre: string
     email: string
+    passwordHash: string
     createdAt?: Date | string
     ordersAsTechnician?: OrderCreateNestedManyWithoutTechnicianInput
     executionRecords?: ExecutionRecordCreateNestedManyWithoutTechnicianInput
     auditLogEntries?: AuditLogEntryCreateNestedManyWithoutActorInput
     resolvedOrders?: OrderCreateNestedManyWithoutResolvedByInput
+    revokedRefreshTokens?: RevokedRefreshTokenCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutOrdersAsClientInput = {
@@ -8696,11 +10089,13 @@ export namespace Prisma {
     activo?: boolean
     nombre: string
     email: string
+    passwordHash: string
     createdAt?: Date | string
     ordersAsTechnician?: OrderUncheckedCreateNestedManyWithoutTechnicianInput
     executionRecords?: ExecutionRecordUncheckedCreateNestedManyWithoutTechnicianInput
     auditLogEntries?: AuditLogEntryUncheckedCreateNestedManyWithoutActorInput
     resolvedOrders?: OrderUncheckedCreateNestedManyWithoutResolvedByInput
+    revokedRefreshTokens?: RevokedRefreshTokenUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutOrdersAsClientInput = {
@@ -8714,11 +10109,13 @@ export namespace Prisma {
     activo?: boolean
     nombre: string
     email: string
+    passwordHash: string
     createdAt?: Date | string
     ordersAsClient?: OrderCreateNestedManyWithoutClientInput
     executionRecords?: ExecutionRecordCreateNestedManyWithoutTechnicianInput
     auditLogEntries?: AuditLogEntryCreateNestedManyWithoutActorInput
     resolvedOrders?: OrderCreateNestedManyWithoutResolvedByInput
+    revokedRefreshTokens?: RevokedRefreshTokenCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutOrdersAsTechnicianInput = {
@@ -8727,11 +10124,13 @@ export namespace Prisma {
     activo?: boolean
     nombre: string
     email: string
+    passwordHash: string
     createdAt?: Date | string
     ordersAsClient?: OrderUncheckedCreateNestedManyWithoutClientInput
     executionRecords?: ExecutionRecordUncheckedCreateNestedManyWithoutTechnicianInput
     auditLogEntries?: AuditLogEntryUncheckedCreateNestedManyWithoutActorInput
     resolvedOrders?: OrderUncheckedCreateNestedManyWithoutResolvedByInput
+    revokedRefreshTokens?: RevokedRefreshTokenUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutOrdersAsTechnicianInput = {
@@ -8745,11 +10144,13 @@ export namespace Prisma {
     activo?: boolean
     nombre: string
     email: string
+    passwordHash: string
     createdAt?: Date | string
     ordersAsClient?: OrderCreateNestedManyWithoutClientInput
     ordersAsTechnician?: OrderCreateNestedManyWithoutTechnicianInput
     executionRecords?: ExecutionRecordCreateNestedManyWithoutTechnicianInput
     auditLogEntries?: AuditLogEntryCreateNestedManyWithoutActorInput
+    revokedRefreshTokens?: RevokedRefreshTokenCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutResolvedOrdersInput = {
@@ -8758,11 +10159,13 @@ export namespace Prisma {
     activo?: boolean
     nombre: string
     email: string
+    passwordHash: string
     createdAt?: Date | string
     ordersAsClient?: OrderUncheckedCreateNestedManyWithoutClientInput
     ordersAsTechnician?: OrderUncheckedCreateNestedManyWithoutTechnicianInput
     executionRecords?: ExecutionRecordUncheckedCreateNestedManyWithoutTechnicianInput
     auditLogEntries?: AuditLogEntryUncheckedCreateNestedManyWithoutActorInput
+    revokedRefreshTokens?: RevokedRefreshTokenUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutResolvedOrdersInput = {
@@ -8839,11 +10242,13 @@ export namespace Prisma {
     activo?: BoolFieldUpdateOperationsInput | boolean
     nombre?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     ordersAsTechnician?: OrderUpdateManyWithoutTechnicianNestedInput
     executionRecords?: ExecutionRecordUpdateManyWithoutTechnicianNestedInput
     auditLogEntries?: AuditLogEntryUpdateManyWithoutActorNestedInput
     resolvedOrders?: OrderUpdateManyWithoutResolvedByNestedInput
+    revokedRefreshTokens?: RevokedRefreshTokenUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutOrdersAsClientInput = {
@@ -8852,11 +10257,13 @@ export namespace Prisma {
     activo?: BoolFieldUpdateOperationsInput | boolean
     nombre?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     ordersAsTechnician?: OrderUncheckedUpdateManyWithoutTechnicianNestedInput
     executionRecords?: ExecutionRecordUncheckedUpdateManyWithoutTechnicianNestedInput
     auditLogEntries?: AuditLogEntryUncheckedUpdateManyWithoutActorNestedInput
     resolvedOrders?: OrderUncheckedUpdateManyWithoutResolvedByNestedInput
+    revokedRefreshTokens?: RevokedRefreshTokenUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserUpsertWithoutOrdersAsTechnicianInput = {
@@ -8876,11 +10283,13 @@ export namespace Prisma {
     activo?: BoolFieldUpdateOperationsInput | boolean
     nombre?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     ordersAsClient?: OrderUpdateManyWithoutClientNestedInput
     executionRecords?: ExecutionRecordUpdateManyWithoutTechnicianNestedInput
     auditLogEntries?: AuditLogEntryUpdateManyWithoutActorNestedInput
     resolvedOrders?: OrderUpdateManyWithoutResolvedByNestedInput
+    revokedRefreshTokens?: RevokedRefreshTokenUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutOrdersAsTechnicianInput = {
@@ -8889,11 +10298,13 @@ export namespace Prisma {
     activo?: BoolFieldUpdateOperationsInput | boolean
     nombre?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     ordersAsClient?: OrderUncheckedUpdateManyWithoutClientNestedInput
     executionRecords?: ExecutionRecordUncheckedUpdateManyWithoutTechnicianNestedInput
     auditLogEntries?: AuditLogEntryUncheckedUpdateManyWithoutActorNestedInput
     resolvedOrders?: OrderUncheckedUpdateManyWithoutResolvedByNestedInput
+    revokedRefreshTokens?: RevokedRefreshTokenUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserUpsertWithoutResolvedOrdersInput = {
@@ -8913,11 +10324,13 @@ export namespace Prisma {
     activo?: BoolFieldUpdateOperationsInput | boolean
     nombre?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     ordersAsClient?: OrderUpdateManyWithoutClientNestedInput
     ordersAsTechnician?: OrderUpdateManyWithoutTechnicianNestedInput
     executionRecords?: ExecutionRecordUpdateManyWithoutTechnicianNestedInput
     auditLogEntries?: AuditLogEntryUpdateManyWithoutActorNestedInput
+    revokedRefreshTokens?: RevokedRefreshTokenUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutResolvedOrdersInput = {
@@ -8926,11 +10339,13 @@ export namespace Prisma {
     activo?: BoolFieldUpdateOperationsInput | boolean
     nombre?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     ordersAsClient?: OrderUncheckedUpdateManyWithoutClientNestedInput
     ordersAsTechnician?: OrderUncheckedUpdateManyWithoutTechnicianNestedInput
     executionRecords?: ExecutionRecordUncheckedUpdateManyWithoutTechnicianNestedInput
     auditLogEntries?: AuditLogEntryUncheckedUpdateManyWithoutActorNestedInput
+    revokedRefreshTokens?: RevokedRefreshTokenUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type ExecutionRecordUpsertWithoutOrderInput = {
@@ -9021,11 +10436,13 @@ export namespace Prisma {
     activo?: boolean
     nombre: string
     email: string
+    passwordHash: string
     createdAt?: Date | string
     ordersAsClient?: OrderCreateNestedManyWithoutClientInput
     ordersAsTechnician?: OrderCreateNestedManyWithoutTechnicianInput
     auditLogEntries?: AuditLogEntryCreateNestedManyWithoutActorInput
     resolvedOrders?: OrderCreateNestedManyWithoutResolvedByInput
+    revokedRefreshTokens?: RevokedRefreshTokenCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutExecutionRecordsInput = {
@@ -9034,11 +10451,13 @@ export namespace Prisma {
     activo?: boolean
     nombre: string
     email: string
+    passwordHash: string
     createdAt?: Date | string
     ordersAsClient?: OrderUncheckedCreateNestedManyWithoutClientInput
     ordersAsTechnician?: OrderUncheckedCreateNestedManyWithoutTechnicianInput
     auditLogEntries?: AuditLogEntryUncheckedCreateNestedManyWithoutActorInput
     resolvedOrders?: OrderUncheckedCreateNestedManyWithoutResolvedByInput
+    revokedRefreshTokens?: RevokedRefreshTokenUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutExecutionRecordsInput = {
@@ -9131,11 +10550,13 @@ export namespace Prisma {
     activo?: BoolFieldUpdateOperationsInput | boolean
     nombre?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     ordersAsClient?: OrderUpdateManyWithoutClientNestedInput
     ordersAsTechnician?: OrderUpdateManyWithoutTechnicianNestedInput
     auditLogEntries?: AuditLogEntryUpdateManyWithoutActorNestedInput
     resolvedOrders?: OrderUpdateManyWithoutResolvedByNestedInput
+    revokedRefreshTokens?: RevokedRefreshTokenUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutExecutionRecordsInput = {
@@ -9144,11 +10565,13 @@ export namespace Prisma {
     activo?: BoolFieldUpdateOperationsInput | boolean
     nombre?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     ordersAsClient?: OrderUncheckedUpdateManyWithoutClientNestedInput
     ordersAsTechnician?: OrderUncheckedUpdateManyWithoutTechnicianNestedInput
     auditLogEntries?: AuditLogEntryUncheckedUpdateManyWithoutActorNestedInput
     resolvedOrders?: OrderUncheckedUpdateManyWithoutResolvedByNestedInput
+    revokedRefreshTokens?: RevokedRefreshTokenUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type EvidencePhotoUpsertWithWhereUniqueWithoutExecutionRecordInput = {
@@ -9277,11 +10700,13 @@ export namespace Prisma {
     activo?: boolean
     nombre: string
     email: string
+    passwordHash: string
     createdAt?: Date | string
     ordersAsClient?: OrderCreateNestedManyWithoutClientInput
     ordersAsTechnician?: OrderCreateNestedManyWithoutTechnicianInput
     executionRecords?: ExecutionRecordCreateNestedManyWithoutTechnicianInput
     resolvedOrders?: OrderCreateNestedManyWithoutResolvedByInput
+    revokedRefreshTokens?: RevokedRefreshTokenCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutAuditLogEntriesInput = {
@@ -9290,11 +10715,13 @@ export namespace Prisma {
     activo?: boolean
     nombre: string
     email: string
+    passwordHash: string
     createdAt?: Date | string
     ordersAsClient?: OrderUncheckedCreateNestedManyWithoutClientInput
     ordersAsTechnician?: OrderUncheckedCreateNestedManyWithoutTechnicianInput
     executionRecords?: ExecutionRecordUncheckedCreateNestedManyWithoutTechnicianInput
     resolvedOrders?: OrderUncheckedCreateNestedManyWithoutResolvedByInput
+    revokedRefreshTokens?: RevokedRefreshTokenUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutAuditLogEntriesInput = {
@@ -9360,11 +10787,13 @@ export namespace Prisma {
     activo?: BoolFieldUpdateOperationsInput | boolean
     nombre?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     ordersAsClient?: OrderUpdateManyWithoutClientNestedInput
     ordersAsTechnician?: OrderUpdateManyWithoutTechnicianNestedInput
     executionRecords?: ExecutionRecordUpdateManyWithoutTechnicianNestedInput
     resolvedOrders?: OrderUpdateManyWithoutResolvedByNestedInput
+    revokedRefreshTokens?: RevokedRefreshTokenUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutAuditLogEntriesInput = {
@@ -9373,11 +10802,13 @@ export namespace Prisma {
     activo?: BoolFieldUpdateOperationsInput | boolean
     nombre?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     ordersAsClient?: OrderUncheckedUpdateManyWithoutClientNestedInput
     ordersAsTechnician?: OrderUncheckedUpdateManyWithoutTechnicianNestedInput
     executionRecords?: ExecutionRecordUncheckedUpdateManyWithoutTechnicianNestedInput
     resolvedOrders?: OrderUncheckedUpdateManyWithoutResolvedByNestedInput
+    revokedRefreshTokens?: RevokedRefreshTokenUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type OrderCreateManyClientInput = {
@@ -9435,6 +10866,12 @@ export namespace Prisma {
     assignedAt?: Date | string | null
     submittedAt?: Date | string | null
     resolvedAt?: Date | string | null
+  }
+
+  export type RevokedRefreshTokenCreateManyUserInput = {
+    jti: string
+    revokedAt?: Date | string
+    expiresAt: Date | string
   }
 
   export type OrderUpdateWithoutClientInput = {
@@ -9622,6 +11059,24 @@ export namespace Prisma {
     resolvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
+  export type RevokedRefreshTokenUpdateWithoutUserInput = {
+    jti?: StringFieldUpdateOperationsInput | string
+    revokedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RevokedRefreshTokenUncheckedUpdateWithoutUserInput = {
+    jti?: StringFieldUpdateOperationsInput | string
+    revokedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RevokedRefreshTokenUncheckedUpdateManyWithoutUserInput = {
+    jti?: StringFieldUpdateOperationsInput | string
+    revokedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type AuditLogEntryCreateManyOrderInput = {
     id?: string
     actorUserId: string
@@ -9715,6 +11170,10 @@ export namespace Prisma {
      * @deprecated Use UserDefaultArgs instead
      */
     export type UserArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = UserDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use RevokedRefreshTokenDefaultArgs instead
+     */
+    export type RevokedRefreshTokenArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = RevokedRefreshTokenDefaultArgs<ExtArgs>
     /**
      * @deprecated Use OrderDefaultArgs instead
      */

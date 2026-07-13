@@ -39,7 +39,49 @@ Formato: `FR-ID/NFR-ID → test file:test name`.
 | NFR-07 | Fuera de alcance de test unitario — SLA operacional de disponibilidad, se mide en producción/monitoreo, no en CI |
 | NFR-08b | No aplica en esta implementación — la validación de tipo (NFR-08) se hace en proceso por magic bytes (`fileValidation.js`), sin delegar en un servicio externo de antivirus. Ver research.md §item pendiente de decisión formal (hallazgo U2 de `/speckit-analyze`, aún abierto). |
 
+## 002-login-rbac
+
+Los FR-ID de este feature son propios y colisionan numéricamente con los de
+`001-work-order-management` de arriba — se referencian aquí con prefijo `002-` para
+evitar ambigüedad.
+
+| Requisito | Test |
+|---|---|
+| 002-FR-001 (vista login Tailwind) | `frontend/tests/Login.test.jsx` |
+| 002-FR-002 / 002-FR-004 (emisión access+refresh, rol en token) | `backend/tests/contract/test_auth_login.js`, `backend/tests/integration/test_auth_login_roles.js` |
+| 002-FR-002a (refresh silencioso) | `backend/tests/integration/test_auth_refresh.js` |
+| 002-FR-003 (401 genérico) | `backend/tests/contract/test_auth_login.js`, `backend/tests/unit/test_auth_service.js` |
+| 002-FR-005 (redirect por rol) | `frontend/src/App.jsx` (`ROLE_ROUTES` en `Login.jsx`) — cubierto indirectamente por `Login.test.jsx` |
+| 002-FR-006 (ocultar UI por rol) | `frontend/tests/App.test.jsx` (`RequireRole` redirige fuera de rutas no permitidas) |
+| 002-FR-007 (nunca localStorage) | `frontend/src/services/session.js` (sessionStorage, sin token) + `authClient.js`/`api.js` (cookies httpOnly) — sin test dedicado, verificado por diseño |
+| 002-FR-008 (401/403 backend) | `backend/tests/contract/test_auth_rbac_cookie.js` |
+| 002-FR-009 (logout + denylist) | `backend/tests/integration/test_auth_logout.js`, `backend/tests/unit/test_auth_service.js` |
+| 002-FR-010 (rate limit 429) | `backend/tests/integration/test_auth_ratelimit.js` |
+
+## 003-dispatcher-orders-ui
+
+Los FR-ID de este feature son propios y colisionan numéricamente con los de
+`001-work-order-management`/`002-login-rbac` de arriba — se referencian aquí con
+prefijo `003-` para evitar ambigüedad.
+
+| Requisito | Test |
+|---|---|
+| 003-FR-001 (listado de órdenes) | `backend/tests/contract/test_orders_list_filters.js`, `backend/tests/integration/test_orders_list_pagination.js`, `frontend/tests/DispatcherOrders.test.jsx` |
+| 003-FR-002 (refresco manual, sin auto-refetch) | `frontend/tests/DispatcherOrders.test.jsx` (botón Refrescar) |
+| 003-FR-002a (filtro combinable status/technicianId) | `backend/tests/contract/test_orders_list_filters.js`, `backend/tests/integration/test_orders_list_pagination.js` (combinado AND), `frontend/tests/DispatcherOrders.test.jsx` |
+| 003-FR-003 / 003-FR-004 (desplegable solo técnicos activos) | `backend/tests/contract/test_technicians_list.js`, `backend/tests/integration/test_orders_assign_dropdown.js`, `frontend/tests/TechnicianAssignSelect.test.jsx` |
+| 003-FR-005 / 003-FR-005a (asignar/reasignar + modal confirmación) | `frontend/tests/ReassignConfirmModal.test.jsx`, `frontend/src/pages/DispatcherOrders.jsx` (integración) |
+| 003-FR-006 (bloqueo asignación en estado terminal) | `backend/tests/integration/test_orders_assign_dropdown.js` |
+| 003-FR-007 (mensaje sin técnicos disponibles) | `frontend/tests/TechnicianAssignSelect.test.jsx` |
+| 003-FR-008 / 003-FR-009 (sidebar + resaltado activo) | `frontend/tests/DispatcherSidebar.test.jsx` |
+| 003-FR-010 (RBAC dispatcher) | `frontend/tests/App.test.jsx`, `backend/tests/contract/test_technicians_list.js` (403 no-dispatcher) |
+| 003-FR-011 / 003-FR-012 (listado técnicos + activeOrderCount) | `backend/tests/integration/test_technicians_active_order_count.js`, `frontend/tests/DispatcherTechnicians.test.jsx` |
+| 003-FR-013 (estados vacíos) | `frontend/tests/DispatcherOrders.test.jsx`, `frontend/tests/DispatcherTechnicians.test.jsx` |
+| 003-FR-014 (paginación tamaño fijo) | `backend/tests/integration/test_orders_list_pagination.js` |
+
 ## Notas
 
 - SC-001..SC-008: ver mapeo indirecto vía los FR/NFR que las sustentan (no se listan como filas separadas para evitar duplicación).
 - Este documento se genera y mantiene manualmente en cada fase de implementación; revisar tras cualquier cambio de tasks.md o spec.md.
+- 002-SC-001 (login <5s): sin test de performance dedicado (ver hallazgo E2 de `/speckit-analyze` de `002-login-rbac`, aceptado como deuda menor).
+- 003-SC-003 (≤3 interacciones asignación) no tiene test dedicado que cuente interacciones — ver hallazgo G2 de `/speckit-analyze` de `003-dispatcher-orders-ui`, aceptado como deuda menor (cubierto implícitamente por el flujo de `DispatcherOrders.jsx`).

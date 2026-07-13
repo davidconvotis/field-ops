@@ -1,3 +1,4 @@
+const bcrypt = require('bcrypt');
 const { prisma } = require('../../src/db/prismaClient');
 const { issueDevToken } = require('../../src/adapters/idpAdapter');
 const { ROLES, ORDER_STATUS } = require('../../src/constants');
@@ -8,9 +9,21 @@ function uniqueEmail(role) {
   return `${role}-${Date.now()}-${counter}@test.dev`;
 }
 
+// Contraseña fija de fixtures (002-login-rbac) — hasheada una sola vez y reutilizada
+// para no pagar el costo de bcrypt en cada createUser() de las suites de 001.
+const TEST_PASSWORD = 'Test1234!';
+const TEST_PASSWORD_HASH = bcrypt.hashSync(TEST_PASSWORD, 10);
+
 async function createUser(role, overrides = {}) {
   const user = await prisma.user.create({
-    data: { role, nombre: `Test ${role}`, email: uniqueEmail(role), activo: true, ...overrides },
+    data: {
+      role,
+      nombre: `Test ${role}`,
+      email: uniqueEmail(role),
+      activo: true,
+      passwordHash: TEST_PASSWORD_HASH,
+      ...overrides,
+    },
   });
   const token = issueDevToken({ userId: user.id, role });
   return { user, token };
@@ -30,4 +43,13 @@ function fakeInvalidBuffer() {
   return Buffer.from('esto no es una imagen real');
 }
 
-module.exports = { createUser, createOrder, fakePngBuffer, fakeInvalidBuffer, ROLES, ORDER_STATUS };
+module.exports = {
+  createUser,
+  createOrder,
+  fakePngBuffer,
+  fakeInvalidBuffer,
+  ROLES,
+  ORDER_STATUS,
+  TEST_PASSWORD,
+  TEST_PASSWORD_HASH,
+};

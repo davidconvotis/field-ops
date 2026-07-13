@@ -7,14 +7,66 @@ info:
     Cubre el slice: creación/(re)asignación de órdenes, registro de ejecución con evidencia,
     aprobación/rechazo, y listado por rol. Ver /specs/001-work-order-management/spec.md para
     los requisitos funcionales y no funcionales completos (FR-000..FR-020, NFR-01..NFR-08b).
+    Incluye además login/refresh/logout (ver /specs/002-login-rbac/spec.md, FR-001..FR-010).
 
 servers:
   - url: /api/v1
 
 security:
-  - bearerAuth: []
+  - cookieAuth: []
 
 paths:
+  /auth/login:
+    post:
+      operationId: login
+      summary: Login con email/password (002-login-rbac FR-001..FR-005) — sin autenticación previa
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses:
+        '200':
+          description: >
+            Credenciales válidas. Emite cookies httpOnly `access_token` (15min) y
+            `refresh_token` (7 días). Cuerpo indica el rol para redirección de UI (FR-005).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LoginResult' }
+        '401':
+          description: Credenciales inválidas — mensaje genérico, no distingue email/password (FR-003)
+        '429':
+          description: Límite de 5 intentos/15min excedido para este email (FR-010)
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
+  /auth/refresh:
+    post:
+      operationId: refreshToken
+      summary: Renovación silenciosa del access JWT (002-login-rbac FR-002a) — vía cookie refresh_token
+      security: []
+      responses:
+        '200':
+          description: Nuevo access_token (y refresh_token rotado) emitidos como cookies httpOnly
+        '401':
+          description: refresh_token ausente, inválido, expirado, o revocado (denylist) — fuerza nuevo login
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
+  /auth/logout:
+    post:
+      operationId: logout
+      summary: Cierre de sesión (002-login-rbac FR-009) — revoca refresh_token vía denylist
+      responses:
+        '200':
+          description: refresh_token.jti insertado en RevokedRefreshToken; cookies borradas del lado cliente
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
   /orders:
     post:
       operationId: createOrder
@@ -39,18 +91,73 @@ paths:
         '503': { $ref: '#/components/responses/ServiceUnavailable' }
     get:
       operationId: listOrders
-      summary: Listar órdenes con alcance por rol (FR-017, FR-018) — todos los roles
+      summary: >
+        Listar órdenes con alcance por rol (FR-017, FR-018) — todos los roles.
+        Filtro y paginación (003-dispatcher-orders-ui FR-001, FR-002a, FR-014).
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema: { $ref: '#/components/schemas/OrderStatus' }
+          description: Filtra por estado exacto (003 FR-002a). Combinable con technicianId.
+        - name: technicianId
+          in: query
+          required: false
+          schema: { type: string, format: uuid }
+          description: Filtra por técnico asignado (003 FR-002a). Combinable con status.
+        - name: page
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: pageSize
+          in: query
+          required: false
+          schema: { type: integer, default: 50 }
+          description: Tamaño fijo de página (003 FR-014) — el valor enviado por el cliente se ignora, siempre 50.
       responses:
         '200':
           description: >
             Cliente: solo sus órdenes. Técnico: solo asignadas a él.
             Dispatcher/supervisor: todas, sin restricción de equipo/región.
+            El scope por rol se aplica antes que status/technicianId (nunca lo amplían).
           content:
             application/json:
-              schema:
-                type: array
-                items: { $ref: '#/components/schemas/Order' }
+              schema: { $ref: '#/components/schemas/PaginatedOrders' }
+        '400':
+          description: status con valor fuera del enum, o technicianId con formato inválido (003)
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
+  /technicians:
+    get:
+      operationId: listTechnicians
+      summary: >
+        Listar técnicos con estado activo/inactivo y cantidad de órdenes activas
+        asignadas (003-dispatcher-orders-ui FR-011, FR-012) — rol dispatcher.
+        Con `activo=true` sirve también al desplegable de asignación (FR-003, FR-004).
+      parameters:
+        - name: activo
+          in: query
+          required: false
+          schema: { type: boolean }
+          description: Filtra por estado activo/inactivo (usado por el desplegable de asignación con activo=true, FR-003/FR-004)
+        - name: page
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: pageSize
+          in: query
+          required: false
+          schema: { type: integer, default: 50 }
+          description: Tamaño fijo de página (003 FR-014) — el valor enviado por el cliente se ignora, siempre 50.
+      responses:
+        '200':
+          description: Listado paginado de usuarios con rol tecnico
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaginatedTechnicians' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
         '503': { $ref: '#/components/responses/ServiceUnavailable' }
 
   /orders/{orderId}:
@@ -250,12 +357,13 @@ paths:
 
 components:
   securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: access_token
       description: >
-        Verificado por idpAdapter (Research §3). Token ausente/inválido/expirado → 401.
+        JWT en cookie httpOnly (002-login-rbac Research §1 — nunca localStorage).
+        Verificado por idpAdapter (001 Research §3, extendido). Ausente/inválido/expirado → 401.
         Fallo del validador externo (IdP/JWKS inalcanzable) → 503, nunca 401 (NFR-03b).
 
   parameters:
@@ -278,13 +386,15 @@ components:
         antivirus NFR-08b) — la operación se aborta por completo, nunca degrada de forma insegura
 
   schemas:
+    OrderStatus:
+      type: string
+      enum: [sin_asignar, pendiente_de_revision, aprobada, rechazada]
+
     Order:
       type: object
       properties:
         id: { type: string, format: uuid }
-        status:
-          type: string
-          enum: [sin_asignar, pendiente_de_revision, aprobada, rechazada]
+        status: { $ref: '#/components/schemas/OrderStatus' }
         clientId: { type: string, format: uuid }
         technicianId: { type: string, format: uuid, nullable: true }
         version: { type: integer }
@@ -294,6 +404,44 @@ components:
         submittedAt: { type: string, format: date-time, nullable: true }
         resolvedAt: { type: string, format: date-time, nullable: true }
 
+    OrderSummary:
+      description: Order + nombres legibles para listado (003-dispatcher-orders-ui FR-001)
+      allOf:
+        - $ref: '#/components/schemas/Order'
+        - type: object
+          properties:
+            clientNombre: { type: string }
+            technicianNombre: { type: string, nullable: true }
+
+    PaginatedOrders:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/OrderSummary' }
+        page: { type: integer }
+        pageSize: { type: integer }
+        total: { type: integer }
+
+    TechnicianSummary:
+      description: Usuario rol tecnico + conteo derivado (003-dispatcher-orders-ui FR-011, FR-012)
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        nombre: { type: string }
+        activo: { type: boolean }
+        activeOrderCount: { type: integer }
+
+    PaginatedTechnicians:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/TechnicianSummary' }
+        page: { type: integer }
+        pageSize: { type: integer }
+        total: { type: integer }
+
     OrderDetail:
       allOf:
         - $ref: '#/components/schemas/Order'
@@ -301,6 +449,14 @@ components:
           properties:
             summary: { type: string, nullable: true }
             summaryUnavailable: { type: boolean }
+
+    LoginResult:
+      type: object
+      properties:
+        userId: { type: string, format: uuid }
+        role:
+          type: string
+          enum: [cliente, tecnico, dispatcher, supervisor]
 
     ExecutionRecord:
       type: object

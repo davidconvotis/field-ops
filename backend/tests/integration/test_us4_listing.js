@@ -11,7 +11,7 @@ describe('US4 escenarios 1-4: listado por rol', () => {
 
     const res = await request(app).get('/api/v1/orders').set('Authorization', `Bearer ${tokenA}`);
     expect(res.status).toBe(200);
-    expect(res.body.every((o) => o.clientId === clientA.id)).toBe(true);
+    expect(res.body.items.every((o) => o.clientId === clientA.id)).toBe(true);
   });
 
   test('escenario 2: técnico ve solo las asignadas a él', async () => {
@@ -23,7 +23,7 @@ describe('US4 escenarios 1-4: listado por rol', () => {
 
     const res = await request(app).get('/api/v1/orders').set('Authorization', `Bearer ${tokenA}`);
     expect(res.status).toBe(200);
-    expect(res.body.every((o) => o.technicianId === techA.id)).toBe(true);
+    expect(res.body.items.every((o) => o.technicianId === techA.id)).toBe(true);
   });
 
   test('escenario 3: dispatcher y supervisor ven todas', async () => {
@@ -34,7 +34,7 @@ describe('US4 escenarios 1-4: listado por rol', () => {
 
     const res = await request(app).get('/api/v1/orders').set('Authorization', `Bearer ${dispatcherToken}`);
     expect(res.status).toBe(200);
-    expect(res.body.length).toBeGreaterThanOrEqual(2);
+    expect(res.body.items.length).toBeGreaterThanOrEqual(2);
   });
 
   test('escenario 4: orderId inexistente -> 404 uniforme para cliente sin relación', async () => {

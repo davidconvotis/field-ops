@@ -125,7 +125,15 @@ exports.Prisma.UserScalarFieldEnum = {
   activo: 'activo',
   nombre: 'nombre',
   email: 'email',
+  passwordHash: 'passwordHash',
   createdAt: 'createdAt'
+};
+
+exports.Prisma.RevokedRefreshTokenScalarFieldEnum = {
+  jti: 'jti',
+  userId: 'userId',
+  revokedAt: 'revokedAt',
+  expiresAt: 'expiresAt'
 };
 
 exports.Prisma.OrderScalarFieldEnum = {
@@ -185,6 +193,7 @@ exports.Prisma.NullsOrder = {
 
 exports.Prisma.ModelName = {
   User: 'User',
+  RevokedRefreshToken: 'RevokedRefreshToken',
   Order: 'Order',
   ExecutionRecord: 'ExecutionRecord',
   EvidencePhoto: 'EvidencePhoto',

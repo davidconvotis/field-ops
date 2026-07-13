@@ -1,21 +1,17 @@
 <!-- SYNC IMPACT REPORT
-Version change: N/A → 1.0.0 (initial ratification)
-Modified principles: N/A (primera versión — sin historial previo)
-Added sections:
-  - Core Principles (6 principios)
-  - Alcance del Sistema (dentro / fuera de scope)
-  - Stack y Restricciones Técnicas
-  - Governance
+Version change: 1.0.0 → 1.1.0 (MINOR — nueva funcionalidad en scope, ver ADR-001)
+Modified principles: Ninguno modificado (solo scope y stack)
+Added sections: Ninguna nueva sección
+Modified sections:
+  - Alcance del Sistema: login+RBAC movido a "Dentro del slice"; registro/recuperación
+    de contraseña permanecen fuera (ver docs/adr/001-incluir-login-rbac-en-slice.md)
+  - Stack y Restricciones Técnicas: Tailwind CSS obligatorio para frontend
 Removed sections: N/A
 Templates reviewed:
   - .specify/templates/plan-template.md ✅ compatible
-    (Constitution Check derivará gates de Principios I-VI)
   - .specify/templates/spec-template.md ✅ compatible
-    (FRs en EARS, ACs y edge cases alinean con Principios II y III)
   - .specify/templates/tasks-template.md ✅ compatible
-    (orden test-before-impl y paralelismo alinean con Principios III y V)
-  - .specify/templates/commands/ ⚠ directorio no encontrado — sin acción requerida
-Follow-up TODOs: Ninguno. Todos los placeholders resueltos.
+Follow-up TODOs: Ninguno.
 -->
 
 # FieldOps Constitution
@@ -108,6 +104,7 @@ primer commit de implementación.
 | 3 | Aprobación / rechazo de orden en estado `pending_review` | Supervisor |
 | 4 | RBAC en doble capa para las tres acciones anteriores | Sistema |
 | 5 | Resumen IA de incidencia a partir de notas del técnico | Sistema / Supervisor |
+| 6 | Login (email/password) conectado a verificación RBAC | Sistema |
 
 ### Fuera del slice (declarado explícitamente)
 
@@ -116,14 +113,16 @@ primer commit de implementación.
 | Dashboard de métricas de productividad | Requiere capa analítica separada; fuera del brief prioritario |
 | Notificaciones push a técnicos | Dependencia de infraestructura externa; aumenta riesgo sin aportar al slice |
 | Gestión completa del ciclo de vida (draft → closed) | Solo las transiciones del slice son necesarias |
-| Registro / autenticación de usuarios | Se asume sistema de identidad existente; fuera del slice |
+| Registro de nuevas cuentas / self-service signup | Ver ADR-001; fuera del slice |
+| Recuperación de contraseña | Ver ADR-001; fuera del slice |
 | Gestión de clientes y activos | No requerido para las operaciones del slice |
 
 ## Stack y Restricciones Técnicas
 
 **Backend**: Node.js 20+ con Express o NestJS (a elección del autor).
 
-**Frontend**: React 18+ con framework de routing ligero.
+**Frontend**: React 18+ con framework de routing ligero. Estilos con Tailwind CSS en
+todo el proyecto (obligatorio, no mezclar con otro sistema de estilos).
 
 **Contrato API**: OpenAPI 3.x — definido en `/contracts/openapi.yaml` antes de
 implementar cualquier endpoint.
@@ -164,4 +163,4 @@ de herramienta.
 o los ACs que cierra. Los revisores DEBEN comprobar que no se introduce código de
 producción sin prueba trazable (Principio III).
 
-**Version**: 1.0.0 | **Ratified**: 2026-07-09 | **Last Amended**: 2026-07-09
+**Version**: 1.1.0 | **Ratified**: 2026-07-09 | **Last Amended**: 2026-07-10

@@ -1,4 +1,10 @@
 const jwt = require('jsonwebtoken');
+const { v4: uuidv4 } = require('uuid');
+const { prisma } = require('../db/prismaClient');
+
+const ACCESS_TOKEN_TTL = `${process.env.ACCESS_TOKEN_TTL_MINUTES || 15}m`;
+const REFRESH_TOKEN_TTL_DAYS = Number(process.env.REFRESH_TOKEN_TTL_DAYS || 7);
+const REFRESH_TOKEN_TTL = `${REFRESH_TOKEN_TTL_DAYS}d`;
 
 class IdpUnavailableError extends Error {
   constructor(message) {
@@ -45,4 +51,53 @@ function issueDevToken({ userId, role }) {
   return jwt.sign({ sub: userId, role }, secret, { expiresIn: '12h' });
 }
 
-module.exports = { verifyToken, issueDevToken, IdpUnavailableError, InvalidTokenError };
+/**
+ * 002-login-rbac Research §2: emite el par access (15min) + refresh (7 días, con
+ * `jti` propio) usado por /auth/login y /auth/refresh. Ambos JWT firmados con el
+ * mismo secreto de dev/test (Research §1 — sin sesión server-side).
+ */
+function issueTokenPair({ userId, role }) {
+  const secret = process.env.JWT_DEV_SECRET;
+  if (!secret) throw new IdpUnavailableError('idpAdapter mal configurado: JWT_DEV_SECRET ausente');
+
+  const jti = uuidv4();
+  const accessToken = jwt.sign({ sub: userId, role }, secret, { expiresIn: ACCESS_TOKEN_TTL });
+  const refreshToken = jwt.sign({ sub: userId, role, jti }, secret, { expiresIn: REFRESH_TOKEN_TTL });
+  return { accessToken, refreshToken };
+}
+
+/**
+ * Verifica un refresh token: firma/expiración (InvalidTokenError -> 401) y que su
+ * `jti` no esté en la denylist de revocados (FR-009, Research §3).
+ */
+async function verifyRefreshToken(token) {
+  const payload = verifyToken(token);
+  if (!payload.jti) throw new InvalidTokenError('refresh token sin jti');
+
+  const revoked = await prisma.revokedRefreshToken.findUnique({ where: { jti: payload.jti } });
+  if (revoked) throw new InvalidTokenError('refresh token revocado');
+
+  return payload;
+}
+
+/**
+ * FR-009: revoca un refresh token insertando su `jti` en la denylist. Idempotente
+ * (logout repetido con el mismo token no falla).
+ */
+async function revokeRefreshToken({ jti, userId, expiresAt }) {
+  await prisma.revokedRefreshToken.upsert({
+    where: { jti },
+    update: {},
+    create: { jti, userId, expiresAt },
+  });
+}
+
+module.exports = {
+  verifyToken,
+  issueDevToken,
+  issueTokenPair,
+  verifyRefreshToken,
+  revokeRefreshToken,
+  IdpUnavailableError,
+  InvalidTokenError,
+};

@@ -1,4 +1,6 @@
 const express = require('express');
+const cookieParser = require('cookie-parser');
+const authRouter = require('./auth');
 const ordersRouter = require('./orders');
 const executionsRouter = require('./executions');
 const reviewsRouter = require('./reviews');
@@ -10,7 +12,9 @@ const { scheduleRetentionJob } = require('../adapters/retentionJob');
 const app = express();
 app.use(tlsEnforce);
 app.use(express.json());
+app.use(cookieParser());
 
+app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/orders', ordersRouter);
 app.use('/api/v1/orders', executionsRouter);
 app.use('/api/v1/orders', reviewsRouter);
