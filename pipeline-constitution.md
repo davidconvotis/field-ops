@@ -1,14 +1,17 @@
 <!-- SYNC IMPACT REPORT
-Version change: N/A → 1.0.0 (initial ratification)
-Modified principles: N/A (new document)
-Added sections: Core Principles (I-VI), Governance
+Version change: 1.0.0 → 1.1.0 (MINOR — adición de principios de pipeline de despliegue)
+Modified principles: Ninguno modificado
+Added sections:
+  - VII. Promoción Explícita entre Entornos
+  - VIII. Rollback Inmediato y Verificable
+  - IX. Gate de Salud Post-Despliegue
 Removed sections: N/A
 Templates reviewed:
   - .specify/templates/plan-template.md ✅ compatible (no referencia CI/CD)
   - .specify/templates/spec-template.md ✅ compatible (no referencia CI/CD)
   - .specify/templates/tasks-template.md ✅ compatible (no referencia CI/CD)
 Follow-up TODOs:
-  - Ninguno. RATIFICATION_DATE = LAST_AMENDED_DATE porque es la ratificación inicial.
+  - Ninguno.
 -->
 
 # FieldOps Pipeline Constitution
@@ -77,6 +80,39 @@ GitHub Actions. No se añaden secrets adicionales para esta autenticación.
 - Cualquier secret adicional fuera de `GITHUB_TOKEN` requiere justificación
   explícita documentada en la spec del flujo correspondiente.
 
+### VII. Promoción Explícita entre Entornos
+
+El despliegue a cada entorno (staging, producción) DEBE ser un paso explícito y
+distinguible en el pipeline, nunca implícito por el mero hecho de mergear a `main`.
+
+- La misma imagen (mismo digest, Principio III) DEBE ser la que se promueve de
+  staging a producción — nunca se reconstruye para producción.
+- El disparo a producción DEBE requerir una acción deliberada: tag de release,
+  aprobación manual (`environment` protection rule) o workflow_dispatch explícito.
+- Prohibido desplegar a producción automáticamente en cada push a `main` sin gate
+  de aprobación.
+
+### VIII. Rollback Inmediato y Verificable
+
+Todo pipeline de despliegue DEBE soportar volver a la versión previa sin reconstruir.
+
+- El mecanismo de rollback DEBE reutilizar una imagen ya publicada en GHCR
+  (digest anterior conocido), consistente con el Principio III.
+- El procedimiento de rollback DEBE estar documentado y ser ejecutable en un solo
+  comando o un solo disparo de workflow, no un proceso manual ad-hoc.
+- Razón: un incidente en producción no puede depender de que CI vuelva a construir
+  bajo presión.
+
+### IX. Gate de Salud Post-Despliegue
+
+Ningún despliegue se considera exitoso hasta que un health check automatizado lo
+confirma.
+
+- El workflow de CD DEBE incluir un paso de verificación (health endpoint, smoke
+  test) después de desplegar y antes de marcar el job como exitoso.
+- Si el health check falla, el pipeline DEBE fallar visiblemente (no continuar en
+  verde) y dejar registro del fallo para disparar rollback (Principio VIII).
+
 ## Governance
 
 Esta constitution supersede cualquier decisión local de implementación de CI/CD.
@@ -92,7 +128,7 @@ Esta constitution supersede cualquier decisión local de implementación de CI/C
 - PATCH: clarificaciones o correcciones de redacción.
 
 **Compliance**: Ningún PR que modifique `.github/workflows/` se aprueba sin
-verificar los seis principios anteriores. Spec previa (Principio IV) es
+verificar los nueve principios anteriores. Spec previa (Principio IV) es
 bloqueante, no opcional.
 
-**Version**: 1.0.0 | **Ratified**: 2026-07-13 | **Last Amended**: 2026-07-13
+**Version**: 1.1.0 | **Ratified**: 2026-07-13 | **Last Amended**: 2026-07-13
