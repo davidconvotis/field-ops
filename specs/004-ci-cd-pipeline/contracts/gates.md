@@ -22,7 +22,7 @@ para `docs/ci-cd-branch-protection.md`.
 | Repositorio | `ghcr.io/<org>/<repo>/fieldops-{back,front}` | igual |
 | Tag | `x.y.z-snapshot.{short-sha}` | `x.y.z` (desde tag git) |
 | Permiso requerido | `packages: write` (solo job de push) | igual |
-| Origen versión | `<componente>/VERSION` + short-sha | tag git (creado por `scripts/bump-version.sh`) |
+| Origen versión | `<componente>/VERSION` + short-sha | tag git `<back\|front>-vX.Y.Z` (creado por `scripts/release-tag.sh`) |
 
 ## Contrato de artefacto dist
 

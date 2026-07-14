@@ -107,8 +107,12 @@ verificar que se crea un GitHub Release con el dist adjunto y la imagen
   de validación deben correr en paralelo, cada uno evaluando solo su propio
   conjunto de gates.
 - ¿Qué pasa si se intenta mergear a `main` sin tag semver creado por
-  `scripts/bump-version.sh`? El workflow de `ci-main-*` debe fallar y no
+  `scripts/release-tag.sh`? El workflow de `ci-main-*` debe fallar y no
   publicar imagen versión final ni Release.
+- ¿Qué pasa si el tag empujado no sigue el prefijo esperado (`back-v*.*.*` /
+  `front-v*.*.*`)? El trigger del workflow correspondiente NO debe activarse
+  — el filtro de tag en `ci-main-{back,front}.yml` solo reacciona a su propio
+  prefijo, evitando que un tag mal formado dispare una release falsa.
 - ¿Qué pasa si Trivy detecta una vulnerabilidad crítica en la imagen? El job
   de build/push debe fallar y no publicar la imagen a GHCR.
 - ¿Qué pasa si el guardián de Constitución (Claude Code Action) no puede
@@ -163,9 +167,13 @@ verificar que se crea un GitHub Release con el dist adjunto y la imagen
   compilado del componente (`dist/`/`build/`) comprimido como asset
   permanente.
 - **FR-009**: El sistema DEBE derivar la versión final de imagen y Release
-  del tag de git creado antes del merge a `main` mediante
-  `scripts/bump-version.sh`, ejecutado de forma automatizada (no manual)
-  como parte del flujo de release.
+  del tag de git con prefijo de componente (`back-vX.Y.Z` / `front-vX.Y.Z`)
+  creado y empujado antes del merge a `main` mediante
+  `scripts/release-tag.sh <back|front>` (wrapper automatizado que invoca
+  `scripts/bump-version.sh` y añade el `git tag`/`git push` que ese script no
+  realiza por sí mismo). El prefijo permite que `ci-main-back.yml` y
+  `ci-main-front.yml`, disparados independientemente por el mismo push a
+  `main`, resuelvan cada uno su propia versión sin ambigüedad.
 - **FR-010 (opcional, Capa 2)**: TRAS publicar el Release, el sistema PUEDE
   desplegar automáticamente a `pre`, y DEBE requerir aprobación manual
   (GitHub Environment con reviewer) antes de desplegar a `prod`.
@@ -234,7 +242,9 @@ verificar que se crea un GitHub Release con el dist adjunto y la imagen
 - El repositorio es público o el plan de GitHub incluye GHCR sin costo
   adicional relevante para este alcance.
 - La creación de tags semver para `main` está automatizada vía
-  `scripts/bump-version.sh` (ya presente en el repo), no es un paso manual.
+  `scripts/release-tag.sh <back|front>` (invoca `scripts/bump-version.sh`
+  para el bump de archivo y añade `git tag`/`git push`, ya que
+  `bump-version.sh` por sí solo no toca git), no es un paso manual.
 - `backend/VERSION` y `frontend/VERSION` (ya presentes en el repo) son la
   fuente de verdad de la versión base `x.y.z` para el cálculo de snapshot.
 - El CD a `dev`/`pre`/`prod` (Capa 2) es opcional y no bloqueante para

@@ -102,7 +102,8 @@ frontend/
 └── Dockerfile             # ya existe
 
 scripts/
-├── bump-version.sh       # ya existe — usado por ci-main-*.yml
+├── bump-version.sh       # ya existe — bump de archivo VERSION, no toca git
+├── release-tag.sh        # nuevo (Fase 6) — wrapper: bump-version.sh + git tag/push, prefijo por componente
 └── deploy.sh              # ya existe — usado solo por CD opcional (Capa 2)
 ```
 
@@ -165,8 +166,13 @@ ci (lint+test+build) ─► docker build ─► push GHCR (semver final tag)
                                       └─► CD a prod (needs: CD a pre, environment: production con reviewer)
 ```
 
-- La versión semver final se obtiene del tag de git (creado antes vía
-  `scripts/bump-version.sh`) — job de versión precede a build.
+- La versión semver final se obtiene del tag de git con prefijo de
+  componente (`back-v*.*.*` / `front-v*.*.*`), creado y empujado antes del
+  merge vía `scripts/release-tag.sh <back|front>` (wrapper que invoca
+  `bump-version.sh` + `git tag`/`git push` — `bump-version.sh` por sí solo no
+  toca git). El trigger de `ci-main-back.yml`/`ci-main-front.yml` es el push
+  del tag con su prefijo (no un push genérico de rama `main`) — job de
+  versión precede a build.
 - `push GHCR` y `gh-release` en paralelo, igual patrón que develop.
 - CD a `prod` (Capa 2) es el único job con `environment: production` y
   aprobación manual explícita — nunca automático tras CD a `pre`.
@@ -181,8 +187,8 @@ Ninguna cruzada — diseño intencional (Principio V + FR-003):
 | `pr-validation-front.yml` | `pull_request` → `develop`, `paths: frontend/**` | No |
 | `ci-develop-back.yml` | `push` → `develop`, `paths: backend/**` | No |
 | `ci-develop-front.yml` | `push` → `develop`, `paths: frontend/**` | No |
-| `ci-main-back.yml` | `push` → `main`, `paths: backend/**` | No |
-| `ci-main-front.yml` | `push` → `main`, `paths: frontend/**` | No |
+| `ci-main-back.yml` | `push` de tag `back-v*.*.*` (creado sobre `main` vía `scripts/release-tag.sh back`) | No |
+| `ci-main-front.yml` | `push` de tag `front-v*.*.*` (creado sobre `main` vía `scripts/release-tag.sh front`) | No |
 
 Cada workflow es autocontenido: no usa `workflow_call`/`workflow_run` para
 encadenar con otro de los 6. Jobs *dentro* de un mismo workflow sí tienen

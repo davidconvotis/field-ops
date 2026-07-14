@@ -17,18 +17,27 @@ de plan.md y sus alternativas descartadas.
 
 ## 2. Creación de tag semver para main
 
-- **Decision**: `scripts/bump-version.sh <componente>/VERSION` se ejecuta de
-  forma automatizada (no manual) antes/como parte del flujo hacia `main`,
-  leyendo la versión actual (a taggear) y dejando el archivo `VERSION`
-  bumpeado a la siguiente minor.
-- **Rationale**: el script ya existe en el repo con este contrato exacto
-  (imprime la versión actual pre-bump por stdout, reescribe el archivo con
-  la siguiente). Automatizarlo evita que un desarrollador olvide crear el
-  tag o lo cree con formato incorrecto.
-- **Alternatives considered**: tag manual por el desarrollador (rechazado —
-  mayor riesgo de error humano/formato); herramientas de release semántico
-  automático tipo `semantic-release` (rechazado — over-engineering para 2
-  componentes con `VERSION` ya presente).
+- **Decision**: `scripts/release-tag.sh <back|front>` (nuevo) se ejecuta de
+  forma automatizada (no manual) antes del merge/push hacia `main`. Internamente
+  invoca `scripts/bump-version.sh <componente>/VERSION` (bump de archivo +
+  lectura de la versión actual a taggear) y añade el paso que ese script no
+  realiza: `git tag -a <componente>-v<version>` + `git push origin <tag>`.
+  El tag lleva prefijo de componente (`back-`/`front-`) para que
+  `ci-main-back.yml`/`ci-main-front.yml`, disparados independientemente por
+  el mismo push, resuelvan cada uno su propia versión sin ambigüedad
+  (hallazgo C2 de `/speckit-analyze`).
+- **Rationale**: `bump-version.sh` ya existe en el repo pero, por diseño,
+  solo toca el archivo `VERSION` local — nunca crea ni empuja el tag de git
+  (hallazgo C1 de `/speckit-analyze`: la spec original asumía que sí lo
+  hacía). El wrapper cierra ese hueco sin modificar el script existente ni
+  su contrato (sigue imprimiendo la versión pre-bump por stdout).
+- **Alternatives considered**: tag manual por el desarrollador tras correr
+  `bump-version.sh` (rechazado — mayor riesgo de error humano/formato, y
+  reintroduce el paso manual que el clarify explícitamente descartó);
+  herramientas de release semántico automático tipo `semantic-release`
+  (rechazado — over-engineering para 2 componentes con `VERSION` ya
+  presente); un único tag compartido sin prefijo de componente (rechazado —
+  ambiguo cuando backend y frontend versionan de forma independiente).
 
 ## 3. Alcance del artefacto dist
 

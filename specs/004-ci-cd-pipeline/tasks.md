@@ -31,6 +31,7 @@ Monorepo web app: `.github/workflows/`, `backend/`, `frontend/`, `scripts/` (ver
 - [ ] T001 Crear directorio `.github/workflows/` (vacío, listo para los 6 archivos)
 - [ ] T002 [P] Verificar que `contracts/openapi.yaml`, `backend/VERSION`, `frontend/VERSION`, `scripts/bump-version.sh` existen y son válidos (prerrequisito de FR-006/FR-009)
 - [ ] T003 [P] Crear `backend/scripts/check-acceptance.js` (stub ejecutable que valida ACs del spec de negocio contra la API; gate de `pr-validation-back.yml` por contrato de `contracts/gates.md`)
+- [ ] T003a [P] Crear `scripts/release-tag.sh <back|front>` (wrapper: invoca `scripts/bump-version.sh`, luego `git tag -a <back|front>-vX.Y.Z` + `git push origin <tag>` — corrige hallazgo C1/C2 de `/speckit-analyze`: `bump-version.sh` por sí solo no toca git)
 
 **Checkpoint**: Estructura lista, nada bloqueante creado aún.
 
@@ -105,18 +106,18 @@ Monorepo web app: `.github/workflows/`, `backend/`, `frontend/`, `scripts/` (ver
 
 **Goal**: Merge a `main` construye imagen semver final y publica GitHub Release con dist permanente.
 
-**Independent Test**: Crear tag semver vía `scripts/bump-version.sh`, mergear a `main` → Release visible con imagen `x.y.z` en GHCR (SC-004).
+**Independent Test**: Mergear a `main`, crear tag semver vía `scripts/release-tag.sh back` (p.ej. `back-v1.2.0`), empujarlo → Release visible con imagen `1.2.0` en GHCR (SC-004).
 
 ### Implementation for User Story 3
 
-- [ ] T032 [P] [US3] Crear `.github/workflows/ci-main-back.yml`: trigger `push` → `main`, `paths: ["backend/**"]`, permisos (`contents: write` para Release, `packages: write` solo en job de push)
+- [ ] T032 [P] [US3] Crear `.github/workflows/ci-main-back.yml`: trigger `push` de tag `back-v*.*.*` (NO push genérico de rama `main` — el tag es prerrequisito, creado por T003a antes del merge), permisos (`contents: write` para Release, `packages: write` solo en job de push)
 - [ ] T033 [US3] Job `ci` (lint+test+build) en `ci-main-back.yml` (depende de T032)
-- [ ] T034 [US3] Job `version` que lee el tag de git creado por `scripts/bump-version.sh` (FR-009) (depende de T033)
+- [ ] T034 [US3] Job `version` que extrae `X.Y.Z` del nombre del tag `back-vX.Y.Z` que disparó el workflow (FR-009) (depende de T033)
 - [ ] T035 [P] [US3] Job `docker-build-push` en `ci-main-back.yml`: build + push `ghcr.io/<org>/<repo>/fieldops-back:x.y.z` (depende de T034)
 - [ ] T036 [P] [US3] Job `gh-release` en `ci-main-back.yml`: `softprops/action-gh-release` con dist comprimido como asset (depende de T033)
-- [ ] T037 [P] [US3] Crear `.github/workflows/ci-main-front.yml`: trigger `push` → `main`, `paths: ["frontend/**"]`, mismos permisos que T032
+- [ ] T037 [P] [US3] Crear `.github/workflows/ci-main-front.yml`: trigger `push` de tag `front-v*.*.*`, mismos permisos que T032
 - [ ] T038 [US3] Job `ci` (lint+test+build) en `ci-main-front.yml` (depende de T037)
-- [ ] T039 [US3] Job `version` (tag git) en `ci-main-front.yml` (depende de T038)
+- [ ] T039 [US3] Job `version` que extrae `X.Y.Z` del nombre del tag `front-vX.Y.Z` (depende de T038)
 - [ ] T040 [P] [US3] Job `docker-build-push` en `ci-main-front.yml` (depende de T039)
 - [ ] T041 [P] [US3] Job `gh-release` en `ci-main-front.yml` (depende de T038)
 

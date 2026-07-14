@@ -38,14 +38,14 @@ workflow artifact con el dist de backend, mismo `short-sha`.
 ## 4. Validar release en main (User Story 3 / SC-004)
 
 ```bash
-CURRENT=$(scripts/bump-version.sh backend/VERSION)
-git tag "v$CURRENT" && git push origin "v$CURRENT"
 git checkout main && git merge --no-ff develop && git push origin main
+TAG=$(scripts/release-tag.sh back)   # crea y empuja back-vX.Y.Z sobre main
 ```
 
-**Resultado esperado**: GitHub Release visible en la pestaña Releases con
-tag `v$CURRENT`, imagen `ghcr.io/<org>/<repo>/fieldops-back:$CURRENT` en
-GHCR, dist adjunto como asset permanente.
+**Resultado esperado**: el push del tag `back-vX.Y.Z` dispara
+`ci-main-back.yml`; GitHub Release visible en la pestaña Releases con ese
+tag, imagen `ghcr.io/<org>/<repo>/fieldops-back:X.Y.Z` en GHCR, dist adjunto
+como asset permanente.
 
 ## 5. Validar Capa 2 (opcional, si implementada)
 
