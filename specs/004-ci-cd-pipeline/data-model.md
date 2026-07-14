@@ -1,76 +1,49 @@
-# Phase 1 Data Model: CI/CD Pipeline
+# Data Model: Pipeline CI/CD FieldOps
 
-Not a persistence data model — this feature has no application database changes.
-These are the logical entities the 6 workflows produce and consume, expanded from
-`spec.md`'s Key Entities with the concrete shape decided in `research.md`.
+No hay modelo de datos de aplicación (esta feature es CI/CD, no persiste
+datos de negocio). Las "entidades" son artefactos de pipeline:
 
-## Build Artifact
+## Workflow de validación de PR
 
-| Field | Type | Notes |
-|---|---|---|
-| `component` | enum: `backend` \| `frontend` | Which component this artifact belongs to |
-| `kind` | enum: `snapshot` \| `final-version` | `snapshot` from `develop`, `final-version` from `main` |
-| `image_tag` | string | `x.y.z-snapshot.{sha}` (snapshot) or `x.y.z` (final-version) |
-| `sha` | string | Short git commit SHA the snapshot was built from |
-| `dist_location` | string | Workflow-artifact URL (snapshot, 90-day) or GitHub Release asset URL (final-version, permanent) |
-| `created_at` | timestamp | Build time |
+- **Campos**: `componente` (front|back), `trigger` (pull_request →
+  `develop`, `paths:` acotado), `gates[]`, `estado` (pending/success/failure).
+- **Relaciones**: produce un `resultado de gate` por cada gate ejecutada;
+  bloquea `Merge de PR` si algún resultado es `failure`.
 
-## Component Version (`VERSION` file, per component)
+## Resultado de gate
 
-| Field | Type | Notes |
-|---|---|---|
-| `component` | enum: `backend` \| `frontend` | One `VERSION` file per component |
-| `value` | semver string (`x.y.z`) | Lives on `develop`; represents the in-progress version |
-| `branch` | `develop` | This entity only exists meaningfully on `develop` — `main` reads it at merge time, never writes it directly |
+- **Campos**: `nombre` (lint-test|spectral|oasdiff|gitleaks|
+  check-acceptance|trivy|constitution-guardian|code-review), `estado`
+  (success|failure), `componente`.
+- **Relaciones**: pertenece a un `Workflow de validación de PR`.
 
-State transition: on merge to `main`, `ci-main-{back,front}` reads the current
-value, freezes it as that release's tag, then opens a bump commit on `develop`
-setting `value` to the next minor version. See research.md §1.
+## Imagen Docker (GHCR)
 
-## Constitution Guardian Check
+- **Campos**: `repositorio` (`ghcr.io/<org>/<repo>/fieldops-{back,front}`),
+  `tag` (`x.y.z-snapshot.{short-sha}` | `x.y.z`), `digest`, `commit_sha`.
+- **Relaciones**: producida por `Workflow CI de develop` o `Workflow CI de
+  main`; referenciada por `Deploy (Capa 2)` sin reconstrucción (Principio III).
+- **Reglas**: `commit_sha` DEBE coincidir con el del `Artefacto dist`
+  publicado en el mismo evento (FR-015).
 
-| Field | Type | Notes |
-|---|---|---|
-| `pull_request_id` | string | PR being validated |
-| `component` | enum: `backend` \| `frontend` | Which `pr-validation-*` invoked it |
-| `verdict` | enum: `pass` \| `fail` | Fail-closed on timeout/unreachable — see research.md §2 |
-| `checked_at` | timestamp | |
+## Artefacto dist
+
+- **Campos**: `componente`, `commit_sha`, `mecanismo`
+  (workflow-artifact|release-asset), `expiracion` (90 días | permanente).
+- **Relaciones**: corresponde 1:1 a una `Imagen Docker` del mismo evento y
+  commit.
 
 ## GitHub Release
 
-| Field | Type | Notes |
-|---|---|---|
-| `tag` | string | `backend-v{x.y.z}` or `frontend-v{x.y.z}` (per-component, per research.md §1) |
-| `component` | enum: `backend` \| `frontend` | |
-| `assets` | list of files | Permanent dist distributables for that release |
-| `image_tag` | string | The GHCR image tag this Release corresponds to |
+- **Campos**: `tag` (`x.y.z`), `assets[]` (dist comprimido), `componente`.
+- **Relaciones**: producido solo por `Workflow CI de main`; contiene el
+  `Artefacto dist` como asset permanente.
 
-## Environment
+## Deploy (Capa 2, opcional)
 
-| Field | Type | Notes |
-|---|---|---|
-| `name` | enum: `dev` \| `pre` \| `prod` | |
-| `fed_by_branch` | `develop` (for `dev`) \| `main` (for `pre`/`prod`) | |
-| `current_artifact` | Build Artifact ref | Per component — `dev`/`pre`/`prod` each track backend + frontend independently |
-| `requires_approval` | boolean | `true` only for `prod` |
-
-## Deployment Record
-
-| Field | Type | Notes |
-|---|---|---|
-| `environment` | Environment ref | |
-| `component` | enum: `backend` \| `frontend` | |
-| `artifact` | Build Artifact ref | What was deployed |
-| `trigger` | enum: `auto-deploy` \| `manual-promotion` \| `rollback` | Per FR-021 |
-| `actor` | string | Who/what triggered it (workflow run for auto, user for manual/rollback) |
-| `health_check_result` | enum: `pass` \| `fail` \| `pending` | Gates whether the deployment counts as successful (FR-018) |
-| `deployed_at` | timestamp | |
-
-## Relationships
-
-```text
-Component Version (develop) --[frozen at merge]--> Build Artifact (final-version, main)
-Build Artifact --[published as]--> GitHub Release (final-version only)
-Build Artifact --[deployed via]--> Deployment Record --[targets]--> Environment
-Constitution Guardian Check --[gates]--> merge of the PR that would produce a Build Artifact
-```
+- **Campos**: `entorno` (dev|pre|prod), `imagen_referenciada` (digest de
+  `Imagen Docker` ya publicada), `aprobacion` (automática|manual).
+- **Relaciones**: consume una `Imagen Docker` existente; `entorno = prod`
+  DEBE tener `aprobacion = manual` (Principio VII).
+- **Reglas**: nunca reconstruye la imagen (Principio III); no existe sin una
+  `Imagen Docker` previamente publicada por CI.

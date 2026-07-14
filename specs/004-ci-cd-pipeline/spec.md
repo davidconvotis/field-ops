@@ -1,401 +1,253 @@
-# Feature Specification: CI/CD Pipeline
+# Feature Specification: Pipeline CI/CD FieldOps
 
 **Feature Branch**: `004-ci-cd-pipeline`
 
-**Created**: 2026-07-13
+**Created**: 2026-07-14
 
 **Status**: Draft
 
-**Input**: User description: "CI/CD pipeline feature — implement GitHub Actions workflows for FieldOps per pipeline-constitution.md v1.1.0: separate CI/CD flows for backend and frontend, SHA-pinned actions, minimal per-job permissions, CD deploys pre-built GHCR image without rebuild, environment promotion gate, rollback support, post-deploy health check gate, GITHUB_TOKEN-only auth to GHCR (no extra secrets)."
+**Input**: User description: "Pipeline CI/CD vía Spec-Kit para FieldOps — 6 workflows (pr-validation-front/back, ci-develop-front/back, ci-main-front/back), gates M9, versionado semver, publicación GHCR + artefactos dist, CD opcional dev/pre/prod"
 
 ## Clarifications
 
-### Session 2026-07-13
+### Session 2026-07-14
 
-- Q: ¿Cómo se detectan cambios por ruta (`paths:` filter exacto, qué patrones)? → A: `paths: ['backend/**']` / `paths: ['frontend/**']` — root-level component dirs only
-- Q: ¿Cómo se calcula versión semver — snapshot vs final? → A: Snapshot `x.y.z-snapshot.{sha}` (short commit SHA) on `develop`; final `x.y.z` read directly from the git tag on `main`
-- Q: ¿Cómo se diferencia artefacto dist develop vs main? → A: `develop` snapshot dist stored as a GitHub Actions workflow artifact with 90-day retention; `main` final dist stored as a GitHub Release asset, permanent
-- Q: ¿Quién crea el tag semver antes del merge a main? → A: Automated — `ci-main-*` computes and creates the semver tag itself on merge, no manual tagging step
+- Q: ¿Qué patrón exacto de `paths:` filter detecta cambios por componente? → A: `backend/**` y `frontend/**`.
+- Q: ¿Cómo se calcula la versión snapshot en `develop`? → A: leer `x.y.z` de `backend/VERSION` / `frontend/VERSION` y componer `x.y.z-snapshot.{short-sha}`.
+- Q: ¿Quién crea el tag semver antes del merge a `main`? → A: `scripts/bump-version.sh` automatizado (no manual).
+- Q: ¿Qué contenido exacto incluye el dist de develop/main? → A: build compilado del componente (`dist/`/`build/`), comprimido, sin `node_modules` ni fuente.
 
 ## User Scenarios & Testing *(mandatory)*
 
-### User Story 1 - Automatic Validation on Every Change (Priority: P1)
+### User Story 1 - Validación de PR bloquea código roto (Priority: P1)
 
-A developer pushes a change to the backend or frontend (or opens a pull request).
-The system automatically builds and tests only the affected component and reports
-a pass/fail result before the change can be merged.
+Un desarrollador abre un PR desde `feature/*` hacia `develop` tocando backend o
+frontend. El pipeline corre automáticamente todas las gates correspondientes al
+componente modificado y bloquea el merge si alguna falla.
 
-**Why this priority**: Without automatic validation, broken code reaches `main` and
-blocks everyone. This is the minimum viable slice — it delivers value the moment a
-single component has a working pipeline, even before deployment exists.
+**Why this priority**: Es la primera línea de defensa — sin esto, código con
+vulnerabilidades, breaking changes o secrets filtrados llega a `develop`.
 
-**Independent Test**: Push a backend-only change and a frontend-only change
-separately; confirm only the corresponding pipeline runs and reports a clear
-pass/fail status on the change.
+**Independent Test**: Abrir un PR que rompe un test unitario de backend y
+verificar que `pr-validation-back.yml` falla y el merge queda bloqueado.
 
 **Acceptance Scenarios**:
 
-1. **Given** a pull request that only touches backend code, **When** it is opened
-   or updated, **Then** only the backend validation pipeline runs and its result is
-   visible on the pull request.
-2. **Given** a pull request that only touches frontend code, **When** it is opened
-   or updated, **Then** only the frontend validation pipeline runs, independently of
-   the backend pipeline.
-3. **Given** a validation pipeline fails, **When** a reviewer looks at the change,
-   **Then** the failure is clearly reported and merging is discouraged/blocked.
+1. **Given** un PR `feature/*` → `develop` con cambios solo en `backend/`,
+   **When** se abre o actualiza el PR, **Then** corre `pr-validation-back.yml`
+   (lint+test, Spectral, oasdiff, Gitleaks, check-acceptance, Trivy, guardián
+   de Constitución, code review dummy) y `pr-validation-front.yml` NO se
+   ejecuta.
+2. **Given** un PR con cambios solo en `frontend/`, **When** se abre o
+   actualiza el PR, **Then** corre `pr-validation-front.yml` (lint+test,
+   Gitleaks, guardián de Constitución) y `pr-validation-back.yml` NO se
+   ejecuta.
+3. **Given** cualquier gate de validación falla, **When** se evalúa el estado
+   del PR, **Then** el merge queda bloqueado hasta que se corrija.
 
 ---
 
-### User Story 2 - Controlled Promotion to an Environment (Priority: P2)
+### User Story 2 - Integración en develop publica snapshot (Priority: P2)
 
-A release manager promotes a change that has already passed validation and been
-published as a build artifact to a target environment (`pre`, then `prod`),
-without triggering a fresh build.
+Al hacer merge de un PR aprobado a `develop`, el pipeline construye y publica
+una imagen Docker snapshot y el artefacto dist correspondiente, dejando
+trazabilidad de qué commit generó qué artefacto.
 
-**Why this priority**: Once validation exists, teams need a safe, repeatable way to
-actually ship the validated artifact. This depends on Story 1 (there must be
-something validated to promote) but is independently demonstrable once a build
-artifact exists.
+**Why this priority**: Sin esto no hay forma de desplegar ni verificar el
+resultado de la integración continua antes de llegar a producción.
 
-**Independent Test**: Take an already-validated and published build artifact and
-promote it to `pre`, then to `prod`, confirming no rebuild occurs and the exact
-same artifact reaches both environments.
+**Independent Test**: Mergear un PR a `develop` y verificar que aparece una
+imagen `x.y.z-snapshot.{sha}` en GHCR y un artifact de workflow con el dist.
 
 **Acceptance Scenarios**:
 
-1. **Given** a build artifact has been validated and published, **When** it
-   auto-deploys to `pre`, **Then** `pre` runs that exact artifact.
-2. **Given** an artifact is running correctly in `pre`, **When** a release manager
-   explicitly promotes it to `prod`, **Then** `prod` runs the identical artifact
-   (not a rebuild).
-3. **Given** no deliberate promotion action has been taken, **When** a change merges
-   to the main line, **Then** production is not automatically updated.
+1. **Given** un merge a `develop` con cambios en `backend/`, **When** termina
+   el CI, **Then** se publica en GHCR una imagen
+   `ghcr.io/<org>/<repo>/fieldops-back:x.y.z-snapshot.{short-sha}` y se sube
+   un artifact de workflow con el dist comprimido (retención 90 días).
+2. **Given** un merge a `develop` con cambios en `frontend/`, **When** termina
+   el CI, **Then** ocurre el mismo comportamiento equivalente para el
+   componente frontend.
+3. **Given** el CD opcional a `dev` está habilitado, **When** la imagen
+   snapshot se publica, **Then** se despliega automáticamente a `dev` sin
+   aprobación manual.
 
 ---
 
-### User Story 3 - Fast Rollback and Deployment Health Confirmation (Priority: P3)
+### User Story 3 - Integración en main publica release final (Priority: P3)
 
-After a deployment, the system automatically confirms the new version is healthy.
-If it isn't, or if a release manager later discovers a problem, they can restore
-the previous known-good version quickly, without waiting for a new build.
+Al hacer merge a `main` (desde `develop`, con tag semver ya creado), el
+pipeline construye la imagen con versión final, publica un GitHub Release con
+el dist como asset permanente, y opcionalmente despliega a `pre` y `prod` con
+aprobación manual para este último.
 
-**Why this priority**: This closes the safety loop around Story 2. It's lower
-priority because it's only needed once deployments already happen, but it is what
-makes deployments low-risk enough to trust.
+**Why this priority**: Es el cierre del ciclo — sin esto no hay entrega
+formal versionada ni trazabilidad permanente del artefacto de producción.
 
-**Independent Test**: Deploy a version, then trigger a rollback action, and confirm
-the previous artifact is restored and confirmed healthy without any build step
-running.
+**Independent Test**: Crear un tag semver, mergear `develop` → `main` y
+verificar que se crea un GitHub Release con el dist adjunto y la imagen
+`x.y.z` en GHCR.
 
 **Acceptance Scenarios**:
 
-1. **Given** a deployment has just completed, **When** the post-deploy health check
-   runs, **Then** the deployment is only marked successful if the check passes.
-2. **Given** a post-deploy health check fails, **When** this happens, **Then** the
-   failure is visible and flagged for rollback, not silently ignored.
-3. **Given** a release manager needs to undo a bad deployment, **When** they trigger
-   rollback, **Then** the previously known-good artifact is redeployed without
-   rebuilding, and its health is reconfirmed.
+1. **Given** un merge a `main` con cambios en backend y un tag semver
+   preexistente, **When** termina el CI, **Then** se publica en GHCR la
+   imagen `ghcr.io/<org>/<repo>/fieldops-back:x.y.z` y se crea un GitHub
+   Release con el dist comprimido como asset.
+2. **Given** el CD opcional a `pre`/`prod` está habilitado, **When** el
+   Release se publica, **Then** se despliega automáticamente a `pre`, y el
+   despliegue a `prod` queda pendiente de aprobación manual vía GitHub
+   Environment con reviewer.
+
+---
 
 ### Edge Cases
 
-- What happens when a change touches both backend and frontend in the same commit?
-  Both validation pipelines MUST run independently, each reporting its own result.
-- What happens when someone attempts to promote to production without an already
-  validated and published artifact? The promotion MUST be rejected.
-- What happens when the post-deploy health check cannot reach the deployed service
-  at all (not just an unhealthy response)? It MUST be treated as a failed check.
-- What happens when a rollback target no longer exists (artifact retention expired
-  or was deleted)? The rollback MUST fail clearly rather than silently deploying
-  something else.
-- What happens when two people trigger a promotion to the same environment at the
-  same time? The system MUST prevent overlapping deployments to the same
-  environment from racing each other.
+- ¿Qué pasa si un PR toca `frontend/` y `backend/` a la vez? Ambos workflows
+  de validación deben correr en paralelo, cada uno evaluando solo su propio
+  conjunto de gates.
+- ¿Qué pasa si se intenta mergear a `main` sin tag semver creado por
+  `scripts/release-tag.sh`? El workflow de `ci-main-*` debe fallar y no
+  publicar imagen versión final ni Release.
+- ¿Qué pasa si el tag empujado no sigue el prefijo esperado (`back-v*.*.*` /
+  `front-v*.*.*`)? El trigger del workflow correspondiente NO debe activarse
+  — el filtro de tag en `ci-main-{back,front}.yml` solo reacciona a su propio
+  prefijo, evitando que un tag mal formado dispare una release falsa.
+- ¿Qué pasa si Trivy detecta una vulnerabilidad crítica en la imagen? El job
+  de build/push debe fallar y no publicar la imagen a GHCR.
+- ¿Qué pasa si el guardián de Constitución (Claude Code Action) no puede
+  contactar la API del agente (timeout/error de red)? El gate debe fallar de
+  forma segura (fail-closed), bloqueando el merge en vez de asumir éxito.
 
 ## Requirements *(mandatory)*
 
-### Branch → Workflow Mapping
+### Functional Requirements
 
-| Evento | Componente afectado | Workflow(s) | Qué debe ocurrir |
-|---|---|---|---|
-| PR `feature/*` → `develop` | Front y/o back (solo el que tiene cambios) | `pr-validation-front`, `pr-validation-back` | Todas las gates de M9 (lint + test + build) + llamada a la API del agente guardián de Constitución. Bloquea el merge si falla cualquiera de las dos. |
-| Merge a `develop` | Front y/o back (solo el que tiene cambios) | `ci-develop-front`, `ci-develop-back` | CI completo + imagen **snapshot** + publicación en el registro + CD automático a `dev`. |
-| Merge a `main` | Front y/o back (solo el que tiene cambios) | `ci-main-front`, `ci-main-back` | CI completo + imagen **versión final** + GitHub Release con artefactos + CD automático a `pre` + CD a `prod` con aprobación manual. |
+**Validación de PR (pr-validation-front.yml / pr-validation-back.yml)**
 
-Each pair runs independently per component (front/back); a change touching only one
-component MUST NOT trigger the other component's workflow (constitution Principle V).
+- **FR-001**: CUANDO se abre o actualiza un PR de `feature/*` hacia `develop`
+  con cambios en `backend/`, el sistema DEBE ejecutar
+  `pr-validation-back.yml` con las gates: lint+test (`npm test`), Spectral
+  (contrato OpenAPI), oasdiff (breaking changes), Gitleaks (secrets),
+  `check-acceptance.js` (ACs vs API), Trivy (vulnerabilidades de imagen),
+  guardián de Constitución (Claude Code Action) y job dummy de code review.
+- **FR-002**: CUANDO se abre o actualiza un PR de `feature/*` hacia `develop`
+  con cambios en `frontend/`, el sistema DEBE ejecutar
+  `pr-validation-front.yml` con las gates: lint+test, Gitleaks, guardián de
+  Constitución.
+- **FR-003**: SI un PR no contiene cambios en `backend/**`, ENTONCES el
+  sistema NO DEBE ejecutar `pr-validation-back.yml` (y análogamente
+  `frontend/**` para frontend), usando filtros de ruta (`paths:`) exactos
+  `backend/**` / `frontend/**` en el trigger.
+- **FR-004**: SI cualquier gate de un workflow de validación de PR falla,
+  ENTONCES el sistema DEBE bloquear el merge del PR.
 
-### Environment Mapping
+**CI de develop (ci-develop-front.yml / ci-develop-back.yml)**
 
-| Environment | Fed by branch | Deploy trigger | Approval required |
-|---|---|---|---|
-| `dev` | `develop` | Automatic, on successful `ci-develop-*` | No |
-| `pre` (staging) | `main` | Automatic, on successful `ci-main-*` | No |
-| `prod` | `main` (same artifact already running in `pre`) | Manual promotion action | Yes — release manager approval |
+- **FR-005**: CUANDO se hace merge a `develop` con cambios en `backend/`
+  (o `frontend/`), el sistema DEBE ejecutar el CI completo del componente
+  afectado, construir una imagen Docker etiquetada
+  `x.y.z-snapshot.{short-sha}`, publicarla en GHCR, y subir como workflow
+  artifact (retención 90 días) el build compilado del componente
+  (`dist/`/`build/`) comprimido, sin `node_modules` ni código fuente.
+- **FR-006**: El sistema DEBE calcular la versión snapshot leyendo `x.y.z`
+  del archivo `VERSION` del componente (`backend/VERSION` /
+  `frontend/VERSION`) y componiendo `x.y.z-snapshot.{short-sha}` con el
+  short-sha del commit actual.
+- **FR-007 (opcional, Capa 2)**: TRAS publicar la imagen snapshot en GHCR, el
+  sistema PUEDE desplegar automáticamente al entorno `dev` sin aprobación
+  manual.
 
-### Functional Requirements (EARS)
+**CI de main (ci-main-front.yml / ci-main-back.yml)**
 
-- **FR-000**: The system SHALL detect "changes affecting the backend component"
-  as any change under `backend/**`, and "changes affecting the frontend
-  component" as any change under `frontend/**` — the two `paths:` filters used
-  by every workflow that scopes itself to one component.
-- **FR-000b**: `pr-validation-back` SHALL additionally trigger on any change
-  under `contracts/**` (the OpenAPI contract, stored per FieldOps constitution
-  Principle II at `contracts/openapi.yaml`, NOT under `backend/**`) — otherwise
-  the Spectral/oasdiff gates in FR-003b/FR-003c could never fire on the file
-  they exist to protect. This additional path applies only to
-  `pr-validation-back`'s trigger, not to `ci-develop-back`/`ci-main-back`
-  (a contract-only change with no `backend/**` change does not need a
-  rebuild/redeploy).
+- **FR-008**: CUANDO se hace merge a `main` con cambios en `backend/` (o
+  `frontend/`), el sistema DEBE ejecutar el CI completo del componente
+  afectado, construir una imagen Docker con la versión semver final derivada
+  del tag de git, publicarla en GHCR, y crear un GitHub Release con el build
+  compilado del componente (`dist/`/`build/`) comprimido como asset
+  permanente.
+- **FR-009**: El sistema DEBE derivar la versión final de imagen y Release
+  del tag de git con prefijo de componente (`back-vX.Y.Z` / `front-vX.Y.Z`)
+  creado y empujado antes del merge a `main` mediante
+  `scripts/release-tag.sh <back|front>` (wrapper automatizado que invoca
+  `scripts/bump-version.sh` y añade el `git tag`/`git push` que ese script no
+  realiza por sí mismo). El prefijo permite que `ci-main-back.yml` y
+  `ci-main-front.yml`, disparados independientemente por el mismo push a
+  `main`, resuelvan cada uno su propia versión sin ambigüedad.
+- **FR-010 (opcional, Capa 2)**: TRAS publicar el Release, el sistema PUEDE
+  desplegar automáticamente a `pre`, y DEBE requerir aprobación manual
+  (GitHub Environment con reviewer) antes de desplegar a `prod`.
 
-**`pr-validation-back`**
+**Transversales**
 
-- **FR-001**: When a pull request from `feature/*` targeting `develop` is opened or
-  updated with changes affecting the backend component, the system SHALL run all
-  M9 validation gates (lint, test, build) for the backend, validate the OpenAPI
-  contract with Spectral, detect breaking changes against the contract currently
-  on `develop` with oasdiff, scan the changed files for committed secrets with
-  Gitleaks, AND call the Constitution Guardian agent API, reporting a combined
-  pass/fail status on that pull request.
-- **FR-002**: If any of the M9 gates, the Spectral lint, the oasdiff breaking-change
-  check, the Gitleaks scan, or the Constitution Guardian check fails, then the
-  system SHALL block merge of that pull request.
-- **FR-003**: While `pr-validation-back` is running or has failed, the system SHALL
-  NOT publish a backend build artifact.
-- **FR-003b**: The Spectral gate SHALL fail the pull request if
-  `contracts/openapi.yaml` (the canonical contract per FieldOps constitution
-  Principle II) does not lint clean against the project's ruleset.
-- **FR-003c**: The oasdiff gate SHALL fail the pull request if it detects a
-  breaking change (per oasdiff's breaking-changes classification) between
-  `contracts/openapi.yaml` on `develop` and the same file in the pull request,
-  unless the pull request title contains the literal marker `BREAKING:` (an
-  explicit, greppable declaration that the break is intentional — no separate
-  approval mechanism is required for this feature).
-- **FR-003d**: The Gitleaks gate SHALL fail the pull request if it detects any
-  committed secret in the diff introduced by that pull request.
-
-**`pr-validation-front`**
-
-- **FR-004**: When a pull request from `feature/*` targeting `develop` is opened or
-  updated with changes affecting the frontend component, the system SHALL run all
-  M9 validation gates (lint, test, build) for the frontend, scan the changed files
-  for committed secrets with Gitleaks, AND call the Constitution Guardian agent
-  API, reporting a combined pass/fail status on that pull request, independently
-  of `pr-validation-back`.
-- **FR-005**: If any of the M9 gates, the Gitleaks scan, or the Constitution
-  Guardian check fails, then the system SHALL block merge of that pull request.
-- **FR-006**: While `pr-validation-front` is running or has failed, the system
-  SHALL NOT publish a frontend build artifact.
-- **FR-006b**: The Gitleaks gate SHALL fail the pull request if it detects any
-  committed secret in the diff introduced by that pull request.
-
-**`ci-develop-back`**
-
-- **FR-007**: When a change affecting the backend component is merged to
-  `develop`, the system SHALL run the full backend CI, scan the built backend
-  image for vulnerabilities with Trivy, publish a backend **snapshot** image
-  tagged `x.y.z-snapshot.{sha}` (short commit SHA) to the registry, store its
-  build distributables as a workflow artifact with 90-day retention, and deploy
-  the image to `dev` automatically.
-- **FR-008**: If backend CI fails on `develop`, or the Trivy scan finds a
-  critical-severity vulnerability in the built image, then the system SHALL NOT
-  publish the snapshot image or deploy to `dev`, and SHALL report the failure.
-- **FR-008b**: After `deploy-dev` and its health check succeed, the system SHALL
-  run `check-aceptance.js` against the backend API now running in `dev`,
-  verifying the acceptance scenarios in `spec.md` hold against the real deployed
-  API, and SHALL report its pass/fail result. If `check-aceptance.js` fails, the
-  deployment SHALL be flagged unhealthy per FR-019 (same consequence as a
-  failed health check), even though `health-check-dev` itself already passed.
-
-**`ci-develop-front`**
-
-- **FR-009**: When a change affecting the frontend component is merged to
-  `develop`, the system SHALL run the full frontend CI, scan the built frontend
-  image for vulnerabilities with Trivy, publish a frontend **snapshot** image
-  tagged `x.y.z-snapshot.{sha}` (short commit SHA) to the registry, store its
-  build distributables as a workflow artifact with 90-day retention, and deploy
-  the image to `dev` automatically, independently of `ci-develop-back`.
-- **FR-010**: If frontend CI fails on `develop`, or the Trivy scan finds a
-  critical-severity vulnerability in the built image, then the system SHALL NOT
-  publish the snapshot image or deploy to `dev`, and SHALL report the failure.
-
-**`ci-main-back`**
-
-- **FR-010b**: When a change (of either component) is merged to `main`, the
-  system SHALL automatically tag `main` with the version currently held on
-  `develop` (e.g. `develop` at `1.2` → `main` tagged `1.2`) before publishing any
-  image, and SHALL then bump `develop`'s version to the next minor version (e.g.
-  `1.2` → `1.3`) so `develop` is always ahead of the last released version — no
-  manual tagging step by a developer or release manager is required.
-- **FR-011**: When a change affecting the backend component is merged to `main`,
-  the system SHALL run the full backend CI, scan the built backend image for
-  vulnerabilities with Trivy, publish a backend **final-version** image tagged
-  `x.y.z` read directly from the semver tag created per FR-010b, attach its
-  build distributables as permanent GitHub Release assets (no expiry), and
-  deploy that image to `pre` automatically.
-- **FR-011b**: If the Trivy scan finds a critical-severity vulnerability in the
-  built backend image, the system SHALL NOT publish the final-version image or
-  deploy to `pre`, and SHALL report the failure.
-- **FR-011c**: After `deploy-pre` and its health check succeed, the system SHALL
-  run `check-aceptance.js` against the backend API now running in `pre`,
-  verifying the acceptance scenarios in `spec.md` hold against the real deployed
-  API, and SHALL report its pass/fail result. If `check-aceptance.js` fails, the
-  deployment SHALL be flagged unhealthy per FR-019, and the release manager
-  SHALL NOT be permitted to promote that image to `prod` (FR-012) until a new
-  `pre` deployment passes both the health check and `check-aceptance.js`.
-- **FR-012**: When a backend final-version image is running correctly in `pre`,
-  the system SHALL allow a release manager to trigger promotion of that exact same
-  image to `prod` without rebuilding.
-- **FR-013**: The system SHALL NOT deploy to `prod` automatically as a side effect
-  of `ci-main-back`; promotion SHALL always require the explicit manual approval
-  in FR-012.
-
-**`ci-main-front`**
-
-- **FR-014**: When a change affecting the frontend component is merged to `main`,
-  the system SHALL run the full frontend CI, scan the built frontend image for
-  vulnerabilities with Trivy, publish a frontend **final-version** image tagged
-  `x.y.z` read directly from the semver tag created per FR-010b, attach its
-  build distributables as permanent GitHub Release assets (no expiry), and
-  deploy that image to `pre` automatically, independently of `ci-main-back`.
-- **FR-014b**: If the Trivy scan finds a critical-severity vulnerability in the
-  built frontend image, the system SHALL NOT publish the final-version image or
-  deploy to `pre`, and SHALL report the failure.
-- **FR-015**: When a frontend final-version image is running correctly in `pre`,
-  the system SHALL allow a release manager to trigger promotion of that exact same
-  image to `prod` without rebuilding.
-- **FR-016**: The system SHALL NOT deploy to `prod` automatically as a side effect
-  of `ci-main-front`; promotion SHALL always require the explicit manual approval
-  in FR-015.
-
-**Cross-cutting (all 6 workflows)**
-
-- **FR-017**: While any deployment (to `dev`, `pre`, or `prod`) is in progress, the
-  system SHALL prevent a second deployment to that same environment from starting
-  concurrently.
-- **FR-018**: When any deployment completes (including rollback), the system SHALL
-  run an automated health confirmation and SHALL NOT mark the deployment successful
-  until that confirmation passes.
-- **FR-019**: If a post-deploy health confirmation fails, then the system SHALL
-  report the failure visibly and flag the deployment for rollback.
-- **FR-020**: The system SHALL provide a way to redeploy the previous known-good
-  artifact to `dev`, `pre`, or `prod` (rollback) without rebuilding, and SHALL
-  re-run the health confirmation from FR-018 after rollback.
-- **FR-021**: The system SHALL record, for every deployment and rollback across all
-  6 workflows, which artifact was deployed, to which environment, when, and by what
-  trigger (auto-deploy, manual promotion, or rollback).
-- **FR-022**: Each of the 6 workflows SHALL end with a final `code-review-gate` job
-  (Job Dummy) that runs only if every prior gate in that workflow succeeded, and
-  that certifies on the pull request or commit that all gates for that workflow
-  passed. It performs no independent check of its own — it is a visible
-  pass/fail seal, not a real code-review integration (that integration is out of
-  scope for this feature).
-- **FR-023**: If any gate earlier in the workflow fails, then `code-review-gate`
-  SHALL NOT run, and the workflow SHALL report as failed without a certification
-  seal.
-
-### Non-Functional Requirements
-
-- **NFR-001** (Speed): Each of the 6 workflows SHALL complete in under 10 minutes
-  from trigger to reported result, under normal load.
-- **NFR-002** (Isolation): Front and back workflows for the same branch SHALL run
-  independently and in parallel — one SHALL NOT wait on the other.
-- **NFR-003** (Immutability): Every external action/dependency referenced by any of
-  the 6 workflows SHALL be pinned to an immutable reference (constitution Principle
-  I) — 0% referenced by a mutable tag.
-- **NFR-004** (Least privilege): Each job within the 6 workflows SHALL declare only
-  the permissions it needs; only the publish job in `ci-develop-*`/`ci-main-*`
-  SHALL hold `packages: write` (constitution Principle II).
-- **NFR-005** (No extra secrets): Authentication to the registry across all 6
-  workflows SHALL rely solely on the platform-injected token — no additional
-  manually-managed secret SHALL be introduced (constitution Principle VI).
-- **NFR-006** (Auditability): Every deploy/rollback/promotion action SHALL be
-  traceable to an actor and a timestamp, retrievable after the fact.
-
-### Acceptance Criteria by Workflow
-
-| Workflow | Gate that runs | Blocks merge? | What gets published |
-|---|---|---|---|
-| `pr-validation-back` | M9 gates (lint+test+build, backend) + Spectral (OpenAPI lint) + oasdiff (breaking changes) + Gitleaks (secrets) + Constitution Guardian API call + `code-review-gate` seal | Yes, on failure of any | Nothing (validation only) |
-| `pr-validation-front` | M9 gates (lint+test+build, frontend) + Gitleaks (secrets) + Constitution Guardian API call + `code-review-gate` seal | Yes, on failure of any | Nothing (validation only) |
-| `ci-develop-back` | Full backend CI + Trivy image scan, must pass to proceed; `check-aceptance.js` runs post-deploy | N/A (post-merge) | Backend **snapshot** image `x.y.z-snapshot.{sha}` in registry + dist as 90-day workflow artifact; auto-deployed to `dev` |
-| `ci-develop-front` | Full frontend CI + Trivy image scan, must pass to proceed | N/A (post-merge) | Frontend **snapshot** image `x.y.z-snapshot.{sha}` in registry + dist as 90-day workflow artifact; auto-deployed to `dev` |
-| `ci-main-back` | Full backend CI + Trivy image scan, must pass to proceed; `check-aceptance.js` runs post-deploy | N/A (post-merge) | Auto-tagged `x.y.z`; backend **final-version** image + permanent GitHub Release asset; auto-deployed to `pre`; promotable to `prod` (manual) |
-| `ci-main-front` | Full frontend CI + Trivy image scan, must pass to proceed | N/A (post-merge) | Auto-tagged `x.y.z`; frontend **final-version** image + permanent GitHub Release asset; auto-deployed to `pre`; promotable to `prod` (manual) |
+- **FR-011**: El sistema DEBE fijar toda GitHub Action externa por SHA
+  completo de commit en todos los workflows (no tags mutables).
+- **FR-012**: Cada job DEBE declarar sus propios `permissions` mínimos;
+  `packages: write` DEBE limitarse al job que publica en GHCR.
+- **FR-013**: El sistema NUNCA DEBE reconstruir imagen desde código fuente en
+  un job de despliegue (CD) — DEBE consumir la imagen ya publicada en GHCR
+  por el CI correspondiente.
+- **FR-014**: El sistema DEBE autenticarse contra GHCR usando el
+  `GITHUB_TOKEN` inyectado automáticamente, sin secrets adicionales.
+- **FR-015**: La imagen Docker publicada y el artefacto dist publicado para
+  un mismo evento (merge a `develop` o a `main`) DEBEN corresponder al mismo
+  commit.
 
 ### Key Entities
 
-- **Build Artifact**: A validated, immutable image for one component (backend or
-  frontend), published once per successful CI run. Two kinds: **snapshot** (from
-  `develop`, feeds `dev`) and **final-version** (from `main`, feeds `pre`/`prod`
-  and a GitHub Release).
-- **Constitution Guardian Check**: An automated gate, called via API during PR
-  validation, that verifies the change complies with project constitution
-  principles before the M9 gates' result is considered final.
-- **OpenAPI Contract Gate**: The Spectral lint + oasdiff breaking-change check run
-  in `pr-validation-back` against `contracts/openapi.yaml` (per FR-000b, this
-  workflow additionally triggers on `contracts/**`); blocks merge on lint
-  failure or a breaking change not marked `BREAKING:` in the PR title.
-- **Secret Scan**: The Gitleaks scan run in `pr-validation-back` and
-  `pr-validation-front` against the PR's diff; blocks merge if a secret is found.
-- **Image Vulnerability Scan**: The Trivy scan run against the built Docker image
-  in `ci-develop-*`/`ci-main-*`, before `push-image`; blocks publish/deploy on a
-  critical-severity finding.
-- **Acceptance Check**: The `check-aceptance.js` script, run after a successful
-  post-deploy health check in `ci-develop-back`/`ci-main-back`, that exercises the
-  acceptance scenarios in this spec against the real deployed backend API.
-- **Code Review Gate (Job Dummy)**: A final, no-op certification job in each of
-  the 6 workflows that only runs — and only succeeds — if every prior gate in
-  that workflow run succeeded; a visible seal, not a real review integration.
-- **GitHub Release**: The versioned, artifact-bearing record created for every
-  `main`-merge final-version image, used as the reference for what is deployable
-  to `pre`/`prod`.
-- **Environment**: A deployment target (`dev`, `pre`, `prod`) with its own
-  currently-running artifact and its own deployment history.
-- **Deployment Record**: The result of deploying a specific artifact to a specific
-  environment, including its health-check outcome and whether it was an
-  auto-deploy, a manual promotion, or a rollback.
+- **Workflow de validación de PR**: Ejecuta gates de calidad/seguridad sobre
+  un componente al abrir/actualizar un PR hacia `develop`; resultado
+  bloqueante para el merge.
+- **Workflow CI de develop**: Ejecuta CI completo tras merge a `develop`;
+  produce imagen snapshot + artifact dist temporal (90 días).
+- **Workflow CI de main**: Ejecuta CI completo tras merge a `main`; produce
+  imagen versión final + GitHub Release con dist permanente.
+- **Imagen Docker (GHCR)**: Artefacto de imagen versionado por snapshot o
+  semver final, trazable a un commit específico.
+- **Artefacto dist**: Build comprimido del componente, publicado como
+  workflow artifact (develop) o Release asset (main).
+- **Gate de validación**: Unidad de verificación (lint/test, Spectral,
+  oasdiff, Gitleaks, check-acceptance, Trivy, guardián de Constitución, code
+  review dummy) asociada a un componente.
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: A change to only one component triggers validation for that component
-  alone, within 10 minutes of the change being pushed, in 100% of cases.
-- **SC-002**: 100% of `prod` deployments use the exact final-version image already
-  validated and already running in `pre` — zero same-change rebuilds at deploy
-  time.
-- **SC-003**: Rollback to a previous known-good version completes and is confirmed
-  healthy in under 10 minutes, without any build step being executed.
-- **SC-004**: 100% of deployments (including rollbacks) have an automated health
-  confirmation outcome recorded before being considered complete.
-- **SC-005**: Zero production deployments occur without an explicit, auditable
-  promotion action.
-- **SC-006**: Every external dependency used by the pipelines is referenced by an
-  immutable, auditable reference (0% referenced by a mutable/movable reference).
+- **SC-001**: Un PR con cambios solo en un componente dispara únicamente el
+  workflow de validación de ese componente — verificable en 100% de los PRs
+  de prueba.
+- **SC-002**: El tiempo total de ejecución de cada workflow de validación de
+  PR es inferior a 10 minutos en el 95% de las ejecuciones.
+- **SC-003**: Todo merge a `develop` produce una imagen en GHCR y un
+  artifact dist localizables y correlacionables al mismo commit en menos de
+  15 minutos tras el merge.
+- **SC-004**: Todo merge a `main` produce un GitHub Release visible desde la
+  pestaña Releases con el dist adjunto, en menos de 15 minutos tras el merge.
+- **SC-005**: Ningún workflow generado contiene una referencia de Action
+  externa por tag mutable — 0 excepciones verificables por revisión estática.
+- **SC-006**: El despliegue a `prod` nunca ocurre sin un registro de
+  aprobación manual explícita — 0 excepciones en el historial de deployments.
 
 ## Assumptions
 
-- Three environments are in scope: `dev`, `pre` (staging), and `prod`. Additional
-  environments (e.g., preview-per-PR) are out of scope for this feature.
-- Branch/environment mapping (`feature/*` → PR gate, `develop` → `dev`, `main` →
-  `pre`/`prod`) reflects RETO-M12.md section 4 as provided by the user.
-- Promotion to `prod` requires a manual approval step by an authorized release
-  manager; fully automatic production deployment on every merge is out of scope.
-- "Component" boundaries match the existing `backend/` and `frontend/` top-level
-  directories in the repository.
-- "M9 gates" refers to the existing lint/test/build validation already used by the
-  project (per prior milestone); this feature wires them into the 6 named
-  workflows rather than redefining them.
-- The Constitution Guardian agent API already exists or is defined by a separate
-  feature; this feature only specifies that PR validation calls it and gates
-  merge on its result — designing the agent itself is out of scope.
-- Snapshot build distributables (`develop`) are retained 90 days as workflow
-  artifacts; final-version build distributables (`main`) are retained permanently
-  as GitHub Release assets. Registry image retention beyond what's needed for
-  rollback to the previous known-good version per environment is out of scope.
-- The health confirmation check reuses each component's existing health/readiness
-  endpoint; defining new health-check business logic is out of scope.
-- Authentication needed by the pipelines to publish and pull artifacts relies
-  solely on credentials automatically provided by the CI/CD platform for the
-  repository — no additional manually-managed credentials are introduced.
+- Los 6 workflows son independientes entre sí (sin triggers cruzados),
+  siguiendo el diseño de `pipeline-constitution.md`.
+- El contrato OpenAPI ya existe (`contracts/openapi.yaml`) como target de
+  Spectral/oasdiff. Las herramientas de gate (Spectral, oasdiff, Gitleaks,
+  Trivy) se invocan vía Action/CLI con configuración por defecto o mínima —
+  no requieren rediseño de gate lógico, solo cableado en los workflows.
+  `check-acceptance.js` no existe aún en el repo y se crea como parte de la
+  implementación de `pr-validation-back.yml` (tarea de Fase 6).
+- El repositorio es público o el plan de GitHub incluye GHCR sin costo
+  adicional relevante para este alcance.
+- La creación de tags semver para `main` está automatizada vía
+  `scripts/release-tag.sh <back|front>` (invoca `scripts/bump-version.sh`
+  para el bump de archivo y añade `git tag`/`git push`, ya que
+  `bump-version.sh` por sí solo no toca git), no es un paso manual.
+- `backend/VERSION` y `frontend/VERSION` (ya presentes en el repo) son la
+  fuente de verdad de la versión base `x.y.z` para el cálculo de snapshot.
+- El CD a `dev`/`pre`/`prod` (Capa 2) es opcional y no bloqueante para
+  considerar completa la Capa 1 mínima del reto.
+- Existe un GitHub Environment `production` configurable con reviewer para
+  la aprobación manual de `prod`.

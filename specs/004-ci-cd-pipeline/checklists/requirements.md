@@ -1,7 +1,7 @@
-# Specification Quality Checklist: CI/CD Pipeline
+# Specification Quality Checklist: Pipeline CI/CD FieldOps
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
-**Created**: 2026-07-13
+**Created**: 2026-07-14
 **Feature**: [spec.md](../spec.md)
 
 ## Content Quality
@@ -31,19 +31,9 @@
 
 ## Notes
 
-- GitHub Actions / GHCR are treated as pre-existing platform constraints fixed by
-  `pipeline-constitution.md` v1.1.0, not as feature-specific implementation choices
-  invented here.
-- **Revision 2026-07-13**: user explicitly requested FRs grouped by the 6 named
-  workflow files (`pr-validation-front/back`, `ci-develop-front/back`,
-  `ci-main-front/back`), EARS phrasing, and branch/environment tables from
-  RETO-M12.md §4. This makes the spec more implementation-flavored than a typical
-  business-facing spec (workflow names, image kinds, GitHub Release) — accepted as
-  intentional for this infra-facing feature; audience is the engineering team, not
-  non-technical stakeholders. "Written for non-technical stakeholders" is treated
-  as not applicable rather than failed.
-- **Revision 2026-07-13 (round 2)**: 4 clarifications resolved (paths filter,
-  semver scheme, dist storage/retention split, automated tag creation) — see
-  `## Clarifications` in spec.md. All items re-checked against updated spec;
-  no regressions, no new gaps.
-- All other items pass. Proceed to `/speckit-plan`.
+- Nombres de herramientas (GHCR, GitHub Release, Trivy, etc.) se mantienen
+  porque son términos del dominio ya fijados en `pipeline-constitution.md` y
+  RETO-M12.md — no representan decisiones de implementación abiertas.
+- Puntos abiertos (formato exacto snapshot, responsable de tag semver) se
+  dejan para `/speckit-clarify` según el propio roadmap del proyecto, no
+  bloquean esta spec.

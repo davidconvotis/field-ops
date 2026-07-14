@@ -1,97 +1,69 @@
-# Implementation Plan: CI/CD Pipeline
+# Implementation Plan: Pipeline CI/CD FieldOps
 
-**Branch**: `004-ci-cd-pipeline` | **Date**: 2026-07-13 | **Spec**: [spec.md](./spec.md)
+**Branch**: `004-ci-cd-pipeline` | **Date**: 2026-07-14 | **Spec**: [spec.md](./spec.md)
 
 **Input**: Feature specification from `/specs/004-ci-cd-pipeline/spec.md`
 
-**Note**: This template is filled in by the `/speckit-plan` command. See `.specify/templates/plan-template.md` for the execution workflow.
-
 ## Summary
 
-Six GitHub Actions workflows (`pr-validation-{front,back}`, `ci-develop-{front,back}`,
-`ci-main-{front,back}`) that gate merges with M9 checks + a Constitution Guardian API
-call, then build/publish Docker images to GHCR and deploy to `dev` (auto, from
-`develop`) and `pre`/`prod` (auto/manual gate, from `main`) — never rebuilding at
-deploy time. Versioning is trunk-based: `develop` carries the in-progress version;
-merging to `main` freezes that version on `main` and bumps `develop` to the next
-minor. Within each workflow, `lint`/`test` run in parallel, gating a serial
-`build → image/dist publish → deploy → health-check` chain (see
-`workflow-design.md`); the 6 workflows have zero dependencies on each other.
+Construir 6 GitHub Actions workflows (independientes, sin cross-trigger) que
+implementan las gates de validación de PR, la integración continua de
+`develop` (imagen snapshot + artifact dist) y la integración continua de
+`main` (imagen semver final + GitHub Release), siguiendo
+`pipeline-constitution.md` (pin SHA, permisos mínimos, no rebuild en CD,
+spec antes que YAML, GHCR sin secrets extra).
 
 ## Technical Context
 
-**Language/Version**: GitHub Actions YAML (workflow definitions); Node.js 20+ /
-TypeScript for the two components being built (backend: Express/NestJS + Prisma;
-frontend: React 18 + Vite), per `.specify/memory/constitution.md`.
+**Language/Version**: YAML (GitHub Actions), Bash/Node.js para scripts de
+soporte (`scripts/bump-version.sh` ya existe).
 
-**Primary Dependencies**: `actions/checkout`, `docker/setup-buildx-action`,
-`docker/login-action`, `docker/build-push-action`, `docker/metadata-action` (all
-pinned by SHA per pipeline-constitution Principle I); GHCR as the image registry;
-GitHub Releases API for release-asset publishing; Constitution Guardian agent API
-(external, called from `pr-validation-*` — contract defined in `contracts/`);
-Spectral (OpenAPI contract lint) and oasdiff (breaking-change detection), both in
-`pr-validation-back`; Gitleaks (secret scanning), in `pr-validation-back` and
-`pr-validation-front`; Trivy (container image vulnerability scan), in
-`ci-develop-*`/`ci-main-*` between `build-image` and `push-image`; a custom
-`check-aceptance.js` Node script (verifies spec.md's acceptance scenarios against
-the real deployed backend API), run post-health-check in `ci-develop-back` and
-`ci-main-back`.
+**Primary Dependencies**: GitHub Actions runners (`ubuntu-latest`), Docker
+Buildx, GHCR (`ghcr.io`), Spectral CLI/Action, oasdiff CLI/Action, Gitleaks
+Action, Trivy Action, Claude Code Action (guardián de Constitución),
+`actions/upload-artifact`, `softprops/action-gh-release`.
 
-**Storage**: N/A for the pipeline itself. Snapshot dist artifacts → GitHub Actions
-workflow artifacts (90-day retention). Final-version dist artifacts → permanent
-GitHub Release assets. Images → GHCR.
+**Storage**: N/A (no persistencia propia; GHCR y GitHub Releases actúan como
+almacenes de artefactos).
 
-**Testing**: Workflow correctness is validated via the `quickstart.md` scenarios
-(real PRs/merges against a disposable branch) — GitHub Actions has no unit-test
-harness of its own; `act` (local runner) MAY be used for fast iteration but is not
-required for acceptance.
+**Testing**: `npm test` (Jest) en backend y frontend, ya configurado
+(`package.json` de cada componente).
 
-**Target Platform**: GitHub-hosted runners (`ubuntu-latest`); deploy targets are
-the `dev`/`pre`/`prod` environments already defined at the infrastructure level
-(out of scope to (re)define here — this feature only deploys to them).
+**Target Platform**: GitHub Actions (`ubuntu-latest` runners).
 
-**Project Type**: Web application (existing `backend/` + `frontend/` split) — this
-feature adds CI/CD automation on top, no application source code changes.
+**Project Type**: Web application (monorepo `backend/` + `frontend/`) — CI/CD
+únicamente, sin cambios de aplicación.
 
-**Performance Goals**: NFR-001 — each of the 6 workflows completes in <10 min.
+**Performance Goals**: SC-002 — workflow de validación de PR < 10 min en 95%
+de ejecuciones.
 
-**Constraints**: All constitution Principles I-IX in `pipeline-constitution.md`
-v1.1.0 (SHA-pinning, least-privilege permissions, no-rebuild CD, spec-before-YAML,
-per-component isolation, `GITHUB_TOKEN`-only auth, environment promotion gate,
-rollback support, post-deploy health gate) plus FR-000–FR-021/NFR-001–006 in
-`spec.md`.
+**Constraints**: Pin por SHA (Principio I), permisos mínimos por job
+(Principio II), sin rebuild en CD (Principio III), sin secrets adicionales
+para GHCR (Principio VI).
 
-**Scale/Scope**: 6 workflows, 2 components, 3 environments, 1 external API
-dependency (Constitution Guardian).
+**Scale/Scope**: 6 workflows, 2 componentes, 3 entornos opcionales
+(dev/pre/prod).
 
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-This feature is governed by **two** constitutions:
+Contra `pipeline-constitution.md` v1.1.0:
 
-- `.specify/memory/constitution.md` (FieldOps product constitution) — only
-  Principle VI (Spec Antes que Código) applies directly; this feature is
-  infrastructure, not a product slice, so Principles I-V (RBAC, API contract,
-  traceability, AI fallback, small-slice) are N/A.
-- `pipeline-constitution.md` v1.1.0 — all 9 principles apply directly; this is
-  the primary governing document for this feature.
+| Principio | Cumplimiento planeado |
+|---|---|
+| I. Pin por SHA | Todo `uses:` fijado por SHA completo en los 6 workflows (verificado en Fase 6 checklist). |
+| II. Permisos mínimos | Cada job declara `permissions:` explícito; `packages: write` solo en job de push a GHCR. |
+| III. No rebuild en CD | CD opcional (Capa 2) consume digest ya publicado; no hay `docker build` en jobs de deploy. |
+| IV. Spec antes que YAML | `spec.md` + `pipeline-constitution.md` ya committed antes de crear ningún `.yml` (verificado por `git log`). |
+| V. Flujos separados por componente | 6 workflows con `paths: backend/**` / `paths: frontend/**`, sin lógica interna de detección — filtro nativo del trigger. |
+| VI. OIDC/Secrets mínimos | Login a GHCR vía `GITHUB_TOKEN`; sin PAT ni secret adicional. |
+| VII. Promoción explícita entre entornos | CD a prod (Capa 2) requiere GitHub Environment `production` con reviewer — nunca implícito por push a `main`. |
+| VIII. Rollback inmediato | Fuera del alcance mínimo de este plan (Capa 2); documentado como pendiente si se implementa CD. |
+| IX. Gate de salud post-despliegue | Fuera del alcance mínimo (Capa 2); pendiente si se implementa CD. |
 
-| Principle | Check | Status |
-|---|---|---|
-| Pipeline I — Pin por SHA | All `uses:` in the 6 workflows pinned by full commit SHA, including the new Spectral/oasdiff/Gitleaks/Trivy actions | Planned (task-level, Phase 2) |
-| Pipeline II — Permisos Mínimos | Each job declares its own minimal `permissions:`; `packages: write` only on publish jobs | Planned |
-| Pipeline III — No Rebuild en CD | `prod` promotion redeploys the exact `pre` image by digest/tag, no rebuild | Planned (FR-012/015) |
-| Pipeline IV — Spec Antes que YAML | spec.md + this plan committed before any `.github/workflows/*.yml` | Satisfied by process (this plan precedes implementation) |
-| Pipeline V — Flujos Separados | `paths: ['backend/**']` / `paths: ['frontend/**']` isolate the 6 workflows into 3 independent pairs | Planned (FR-000) |
-| Pipeline VI — OIDC/Secrets Mínimos | `GITHUB_TOKEN` only for GHCR login; no extra PAT | Planned |
-| Pipeline VII — Promoción Explícita | `prod` requires manual `environment` approval; `pre` is auto but `prod` is not | Planned (FR-012/013/015/016) |
-| Pipeline VIII — Rollback | Rollback redeploys a previously published image/digest, no rebuild | Planned (FR-020) |
-| Pipeline IX — Gate de Salud | Post-deploy health check gates deployment success on all 3 environments | Planned (FR-018/019) |
-| FieldOps VI — Spec Antes que Código | git history shows spec → clarify → plan before `.github/workflows/` commits | Satisfied by process |
-
-No violations identified. **Complexity Tracking is empty** — no gate requires
-justification.
+Sin violaciones que requieran `Complexity Tracking` para la Capa 1 (mínima).
+Los principios VIII/IX solo aplican si se construye la Capa 2 opcional.
 
 ## Project Structure
 
@@ -99,15 +71,12 @@ justification.
 
 ```text
 specs/004-ci-cd-pipeline/
-├── plan.md              # This file (/speckit-plan command output)
-├── research.md          # Phase 0 output (/speckit-plan command)
-├── data-model.md        # Phase 1 output (/speckit-plan command)
-├── workflow-design.md   # Phase 1 output — job graphs, gate→tool mapping, cross-workflow independence
-├── quickstart.md        # Phase 1 output (/speckit-plan command)
-├── contracts/           # Phase 1 output (/speckit-plan command)
-├── checklists/
-│   └── requirements.md
-└── tasks.md             # Phase 2 output (/speckit-tasks command - NOT created by /speckit-plan)
+├── plan.md              # This file
+├── research.md          # Phase 0 output
+├── data-model.md         # Phase 1 output
+├── quickstart.md         # Phase 1 output
+├── contracts/            # Phase 1 output (gate → tool → componente)
+└── tasks.md              # Phase 2 output (/speckit-tasks)
 ```
 
 ### Source Code (repository root)
@@ -122,50 +91,129 @@ specs/004-ci-cd-pipeline/
     ├── ci-main-back.yml
     └── ci-main-front.yml
 
-contracts/
-└── openapi.yaml           # EXISTING (per FieldOps constitution Principle II) — linted by Spectral, diffed by oasdiff; pr-validation-back additionally triggers on contracts/** (FR-000b)
-
 backend/
-├── Dockerfile            # NEW — does not exist yet, required for GHCR publish
-├── VERSION               # NEW — holds the develop in-progress semver (per FR-010b)
-├── src/
-└── ...
-
-scripts/
-├── bump-version.sh       # EXISTING
-├── deploy.sh             # EXISTING
-└── check-aceptance.js    # NEW — verifies spec.md acceptance scenarios against the deployed backend API (FR-008b/FR-011c)
+├── src/                  # ya existe
+├── VERSION               # ya existe (fuente semver base)
+└── Dockerfile             # ya existe
 
 frontend/
-├── Dockerfile            # NEW — does not exist yet, required for GHCR publish
-├── VERSION               # NEW — holds the develop in-progress semver (per FR-010b)
-├── src/
-└── ...
+├── src/                  # ya existe
+├── VERSION               # ya existe (fuente semver base)
+└── Dockerfile             # ya existe
+
+scripts/
+├── bump-version.sh       # ya existe — bump de archivo VERSION, no toca git
+├── release-tag.sh        # nuevo (Fase 6) — wrapper: bump-version.sh + git tag/push, prefijo por componente
+└── deploy.sh              # ya existe — usado solo por CD opcional (Capa 2)
 ```
 
-**Structure Decision**: Existing `backend/` + `frontend/` web-application split is
-reused unchanged (per FieldOps constitution stack section). This feature adds only
-`.github/workflows/*.yml` plus one `Dockerfile` and one `VERSION` file per
-component — no changes to application source layout. `Dockerfile`/`VERSION` do not
-exist yet in the repo today; their creation is in scope for this feature (a
-pipeline that publishes images needs something to build).
+**Structure Decision**: Monorepo ya existente `backend/` + `frontend/`
+(Opción 2 del template). Los workflows nuevos viven exclusivamente en
+`.github/workflows/`; no se reestructura código de aplicación. Cada
+workflow usa `paths:` acotado a su carpeta de componente (Principio V).
 
-## Post-Design Constitution Check
+## Orden y paralelismo de jobs por workflow
 
-*Re-evaluated after Phase 1 (research.md, data-model.md, contracts/, quickstart.md).*
+**pr-validation-back.yml** (jobs en paralelo donde no hay dependencia, gates
+específicas después de lint+test):
 
-All 6 decisions in research.md (§1–6) and the data model stay within the 9
-pipeline-constitution principles and FR-000–FR-021 — no new violation introduced
-by design:
+```
+lint+test (npm test) ──┬─► spectral (contrato OpenAPI)
+                        ├─► oasdiff (breaking changes)
+                        ├─► gitleaks (secrets)
+                        ├─► check-acceptance (ACs vs API)
+                        ├─► trivy (imagen — requiere build previo de imagen local)
+                        └─► constitution-guardian (Claude Code Action)
+                                │
+                                ▼
+                        code-review (job dummy, needs: [todos los anteriores])
+```
 
-- VERSION-file + per-component tag scheme (§1) implements FR-010b without adding
-  an external tool, keeping Principle IV (spec-before-YAML) and this plan in sync.
-- Fail-closed Guardian handling (§2) and single-approver `prod` gate (§4) are
-  captured in `contracts/` so a task implementing them has an explicit target.
-- No principle requires re-justification. **Complexity Tracking remains empty.**
+- `lint+test` es el único job bloqueante inicial (gate rápida, falla rápido).
+- Spectral/oasdiff/Gitleaks/check-acceptance corren en paralelo tras
+  `lint+test` — son independientes entre sí.
+- `trivy` necesita una imagen local construida (no publicada) — job propio
+  con `docker build --load` previo al scan, en paralelo con las gates de
+  texto/contrato.
+- `constitution-guardian` corre en paralelo (llamada a API externa,
+  potencialmente la más lenta — no debe bloquear a las demás).
+- `code-review` (dummy) es el job final: `needs:` de todos los anteriores,
+  certifica que el PR pasó todas las gates.
+
+**pr-validation-front.yml**: mismo patrón simplificado —
+`lint+test → [gitleaks, constitution-guardian] → code-review`.
+
+**ci-develop-back.yml / ci-develop-front.yml**:
+
+```
+ci (lint+test+build) ─► docker build ─► push GHCR (snapshot tag)
+                                      └─► upload-artifact (dist, 90d)
+                    [opcional] ─► CD a dev (needs: push GHCR)
+```
+
+- `push GHCR` y `upload-artifact` corren en paralelo (ambos dependen solo de
+  `docker build`/`npm run build`, no entre sí) — ambos deben referenciar el
+  mismo commit (FR-015).
+- CD a dev (Capa 2) depende de que la imagen ya esté en GHCR (`needs:
+  push-image`), nunca reconstruye.
+
+**ci-main-back.yml / ci-main-front.yml**:
+
+```
+ci (lint+test+build) ─► docker build ─► push GHCR (semver final tag)
+                                      └─► gh-release (dist como asset)
+                    [opcional] ─► CD a pre (needs: push GHCR)
+                                      └─► CD a prod (needs: CD a pre, environment: production con reviewer)
+```
+
+- La versión semver final se obtiene del tag de git con prefijo de
+  componente (`back-v*.*.*` / `front-v*.*.*`), creado y empujado antes del
+  merge vía `scripts/release-tag.sh <back|front>` (wrapper que invoca
+  `bump-version.sh` + `git tag`/`git push` — `bump-version.sh` por sí solo no
+  toca git). El trigger de `ci-main-back.yml`/`ci-main-front.yml` es el push
+  del tag con su prefijo (no un push genérico de rama `main`) — job de
+  versión precede a build.
+- `push GHCR` y `gh-release` en paralelo, igual patrón que develop.
+- CD a `prod` (Capa 2) es el único job con `environment: production` y
+  aprobación manual explícita — nunca automático tras CD a `pre`.
+
+## Dependencias entre los 6 workflows
+
+Ninguna cruzada — diseño intencional (Principio V + FR-003):
+
+| Workflow | Trigger | Depende de otro workflow |
+|---|---|---|
+| `pr-validation-back.yml` | `pull_request` → `develop`, `paths: backend/**` | No |
+| `pr-validation-front.yml` | `pull_request` → `develop`, `paths: frontend/**` | No |
+| `ci-develop-back.yml` | `push` → `develop`, `paths: backend/**` | No |
+| `ci-develop-front.yml` | `push` → `develop`, `paths: frontend/**` | No |
+| `ci-main-back.yml` | `push` de tag `back-v*.*.*` (creado sobre `main` vía `scripts/release-tag.sh back`) | No |
+| `ci-main-front.yml` | `push` de tag `front-v*.*.*` (creado sobre `main` vía `scripts/release-tag.sh front`) | No |
+
+Cada workflow es autocontenido: no usa `workflow_call`/`workflow_run` para
+encadenar con otro de los 6. Jobs *dentro* de un mismo workflow sí tienen
+dependencias (`needs:`), documentadas arriba.
+
+## Mapeo gate → tool → componente
+
+| Gate | Tool | Componente | Workflow(s) |
+|---|---|---|---|
+| Lint y test unitarios | `npm test` (Jest) | Front + Back | `pr-validation-*`, `ci-develop-*`, `ci-main-*` |
+| Validación contrato OpenAPI | Spectral | Back | `pr-validation-back` |
+| Detección breaking changes | oasdiff | Back | `pr-validation-back` |
+| Escaneo de secrets | Gitleaks | Front + Back | `pr-validation-*` |
+| Verificación ACs vs API | `check-acceptance.js` (por crear) | Back | `pr-validation-back` |
+| Vulnerabilidades de imagen | Trivy | Back (imagen backend) | `pr-validation-back` |
+| Revisión de Constitución | Claude Code Action | Front + Back | `pr-validation-*` |
+| Code review registrado | Job dummy | Front + Back | `pr-validation-*` |
+
+## Decisión de plataforma CD (Capa 2, opcional)
+
+No bloqueante para Capa 1. `scripts/deploy.sh` ya existe como stub genérico
+(`kubectl`/`ecs`/`ssh+compose` a elegir); no se fija plataforma concreta en
+este plan — se documenta como decisión abierta a resolver solo si se aborda
+la Capa 2. No afecta ninguna tarea de la Capa 1 mínima.
 
 ## Complexity Tracking
 
-> **Fill ONLY if Constitution Check has violations that must be justified**
-
-*(Empty — no violations identified in either Constitution Check pass.)*
+*Sin violaciones de constitution que requieran justificación en la Capa 1.*

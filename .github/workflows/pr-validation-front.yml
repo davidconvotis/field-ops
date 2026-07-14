@@ -1,55 +1,19 @@
-name: pr-validation-front
+name: PR Validation — Frontend
+
+# contracts/gates.md: lint+test, Gitleaks, guardián de Constitución,
+# code-review dummy. Pin SHA (pipeline-constitution.md Principio I).
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
     branches: [develop]
-    paths: ["frontend/**"]
-  workflow_dispatch:
-    inputs:
-      pr_number:
-        description: "PR number to re-run validation for (manual run)"
-        required: true
-        type: string
+    paths:
+      - "frontend/**"
 
-concurrency:
-  group: pr-validation-front-${{ github.event.pull_request.number || inputs.pr_number }}
-  cancel-in-progress: true
+permissions:
+  contents: read
 
 jobs:
-  # Resolves PR number/head_sha/base_sha uniformly for both the automatic
-  # pull_request trigger and a manual workflow_dispatch re-run, so every
-  # downstream job/step can use needs.context.outputs.* instead of
-  # github.event.pull_request.* (which is empty on manual runs).
-  context:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: read
-    outputs:
-      pr_number: ${{ steps.resolve.outputs.pr_number }}
-      head_sha: ${{ steps.resolve.outputs.head_sha }}
-      base_sha: ${{ steps.resolve.outputs.base_sha }}
-    steps:
-      - id: resolve
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            PR_NUMBER="${{ inputs.pr_number }}"
-            DATA=$(gh api "repos/${{ github.repository }}/pulls/$PR_NUMBER")
-            echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
-            echo "head_sha=$(echo "$DATA" | jq -r .head.sha)" >> "$GITHUB_OUTPUT"
-            echo "base_sha=$(echo "$DATA" | jq -r .base.sha)" >> "$GITHUB_OUTPUT"
-          else
-            echo "pr_number=${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
-            echo "head_sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
-            echo "base_sha=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_OUTPUT"
-          fi
-
-  lint:
-    needs: context
+  lint-test:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -57,95 +21,49 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          ref: ${{ needs.context.outputs.head_sha }}
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "20"
-          cache: "npm"
+          cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - run: npm run lint
-
-  test:
-    needs: context
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    defaults:
-      run:
-        working-directory: frontend
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          ref: ${{ needs.context.outputs.head_sha }}
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
-        with:
-          node-version: "20"
-          cache: "npm"
-          cache-dependency-path: frontend/package-lock.json
-      - run: npm ci
       - run: npm test
 
-  build:
-    needs: [context, lint, test]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    defaults:
-      run:
-        working-directory: frontend
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          ref: ${{ needs.context.outputs.head_sha }}
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
-        with:
-          node-version: "20"
-          cache: "npm"
-          cache-dependency-path: frontend/package-lock.json
-      - run: npm ci
-      - run: npm run build
-
   gitleaks:
-    needs: context
+    needs: lint-test
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      pull-requests: read # gitleaks-action's PR scan mode calls GET /pulls/:number/commits
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
-          ref: ${{ needs.context.outputs.head_sha }}
           fetch-depth: 0
-      - name: "Install gitleaks (checksum-pinned CLI — gitleaks-action requires a paid GITLEAKS_LICENSE secret for orgs, which pipeline-constitution Principle VI forbids)"
-        run: |
-          set -euo pipefail
-          curl -sL -o gitleaks.tar.gz https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
-          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  gitleaks.tar.gz" | sha256sum -c -
-          tar -xzf gitleaks.tar.gz gitleaks
-          sudo mv gitleaks /usr/local/bin/gitleaks
-      - name: Scan the PR's diff for committed secrets (FR-006b)
-        run: gitleaks git --source . --log-opts="${{ needs.context.outputs.base_sha }}..${{ needs.context.outputs.head_sha }}" --no-banner
+      - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   constitution-guardian:
-    needs: [context, build, gitleaks]
+    needs: lint-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: ./.github/actions/constitution-guardian
+        with:
+          anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  code-review:
+    needs: [gitleaks, constitution-guardian]
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          ref: ${{ needs.context.outputs.head_sha }}
-      - uses: ./.github/actions/constitution-guardian
-        with:
-          component: frontend
-          pull_request_number: ${{ needs.context.outputs.pr_number }}
-          head_sha: ${{ needs.context.outputs.head_sha }}
-
-  code-review-gate:
-    needs: constitution-guardian
-    runs-on: ubuntu-latest
-    permissions: {}
-    steps:
-      - run: echo "All gates passed — pr-validation-front certified (FR-022)"
+      - name: Certify all frontend gates passed
+        run: echo "Todas las gates de pr-validation-front.yml en verde — PR listo para revisión humana."

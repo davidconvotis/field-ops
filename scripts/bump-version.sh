@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Reads a component's VERSION file, prints the current value, and rewrites
 # the file bumped to the next minor version (1.2.0 -> 1.3.0).
-# research.md §1 / spec.md FR-010b.
+# Called by scripts/release-tag.sh, which adds the git tag/push step this
+# script does not perform. research.md §2 / spec.md FR-009.
 #
 # Usage: bump-version.sh <path-to-VERSION-file>
 # Prints the CURRENT (pre-bump) version to stdout — this is the version to

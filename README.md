@@ -5,20 +5,50 @@ Work order management system — see `specs/` for feature specifications and
 
 ## CI/CD
 
-Six automated workflows plus two manual-dispatch workflows implement the
-pipeline defined in `specs/004-ci-cd-pipeline/`.
+Six independent GitHub Actions workflows (no cross-triggering — see
+`specs/004-ci-cd-pipeline/plan.md`) implement the mandatory Capa 1 pipeline
+defined in `specs/004-ci-cd-pipeline/`. CD to dev/pre/prod is an optional,
+non-blocking Capa 2 and is **not** implemented yet (see `tasks.md` T047-T050).
+
+### Branching strategy
+
+| Branch | Purpose |
+|---|---|
+| `feature/*` | Work in progress. Never deployed directly. |
+| `develop` | Integration line. Every feature goes through here before `main`. |
+| `main` | Final versions. Only receives merges from `develop`. |
+
+### Workflows
 
 | Branch / Trigger | Workflow(s) | What happens |
 |---|---|---|
-| PR `feature/*` → `develop` | `pr-validation-back`, `pr-validation-front` | Lint + test + build (only the changed component) + Constitution Guardian check. Blocks merge on failure of either. |
-| Merge to `develop` | `ci-develop-back`, `ci-develop-front` | Full CI + snapshot image (`x.y.z-snapshot.{sha}`) published to GHCR + 90-day dist artifact + auto-deploy to `dev`. |
-| Merge to `main` | `ci-main-back`, `ci-main-front` | Full CI + freezes the `develop` version as the release tag + permanent GitHub Release + auto-deploy to `pre` + bumps `develop`'s `VERSION` to the next minor. |
-| Manual (`workflow_dispatch`) | `promote-prod` | Promotes the exact image already validated in `pre` to `prod`, gated by a required-reviewer approval. Never rebuilds. |
-| Manual (`workflow_dispatch`) | `rollback` | Redeploys the immediately-previous known-good artifact for a given `(component, environment)`. Never rebuilds. |
+| PR `feature/*` → `develop`, `paths: backend/**` | `pr-validation-back` | Lint+test, Spectral, oasdiff, Gitleaks, `check-acceptance.js`, Trivy, Constitution Guardian, code-review (dummy). Blocks merge on any failure. |
+| PR `feature/*` → `develop`, `paths: frontend/**` | `pr-validation-front` | Lint+test, Gitleaks, Constitution Guardian, code-review (dummy). Blocks merge on any failure. |
+| Push to `develop`, `paths: backend/**` | `ci-develop-back` | Full CI + snapshot image (`x.y.z-snapshot.{sha}`) pushed to GHCR + 90-day dist workflow artifact. |
+| Push to `develop`, `paths: frontend/**` | `ci-develop-front` | Same, for frontend. |
+| Push of tag `back-v*.*.*` | `ci-main-back` | Full CI + image tagged with the semver from the tag, pushed to GHCR + permanent GitHub Release with dist asset. |
+| Push of tag `front-v*.*.*` | `ci-main-front` | Same, for frontend. |
 
-Environments: `dev` (auto), `pre` (auto), `prod` (manual approval only).
+### Opening a test PR
 
-See `specs/004-ci-cd-pipeline/quickstart.md` for end-to-end validation
-scenarios, and `docs/ci-cd-environment-setup.md` /
-`docs/ci-cd-branch-protection.md` for the one-time manual repo setup this
-pipeline depends on.
+1. Branch from `develop`: `git checkout -b feature/my-change develop`.
+2. Touch only `backend/**` or only `frontend/**` to see path-scoped triggering.
+3. Open a PR into `develop` — only the matching `pr-validation-*` workflow
+   runs; the merge button stays disabled until it's green.
+
+### Verifying a snapshot in GHCR
+
+After merging to `develop`, check the "Packages" tab of the repo (or
+`ghcr.io/<org>/<repo>/fieldops-{back,front}`) for a tag
+`x.y.z-snapshot.{short-sha}` matching `git rev-parse --short HEAD` on
+`develop`, and a matching workflow artifact under the Actions run.
+
+### Cutting a release
+
+Before merging `develop` → `main`, run `scripts/release-tag.sh back` and/or
+`scripts/release-tag.sh front` (creates and pushes `back-vX.Y.Z` /
+`front-vX.Y.Z`) — that tag push is what triggers `ci-main-{back,front}`, not
+the merge itself. See `specs/004-ci-cd-pipeline/quickstart.md` for the full
+end-to-end walkthrough, and `docs/ci-cd-environment-setup.md` /
+`docs/ci-cd-branch-protection.md` for one-time manual repo setup (branch
+protection rules; environments only needed if Capa 2 is implemented later).

@@ -1,67 +1,60 @@
-# Quickstart: Validating the CI/CD Pipeline
+# Quickstart: Validar Pipeline CI/CD FieldOps
 
-End-to-end scenarios to prove the 6 workflows behave per `spec.md`. Run against a
-disposable `feature/*` branch — do not use real `prod`.
+Prerrequisitos: repo con `.github/workflows/*.yml` generados (Fase 6),
+`GITHUB_TOKEN` con permisos por defecto, environments `dev`/`pre`/`prod`
+configurados si se prueba Capa 2 (ver `docs/ci-cd-environment-setup.md`).
 
-## Prerequisites
+## 1. Validar aislamiento por componente (User Story 1 / SC-001)
 
-- `backend/Dockerfile`, `frontend/Dockerfile`, `backend/VERSION`, `frontend/VERSION`
-  exist (Phase 2 tasks create these).
-- `.github/workflows/{pr-validation,ci-develop,ci-main}-{back,front}.yml` exist.
-- Repo has `dev`, `pre`, `prod` GitHub `environment`s configured; `prod` has one
-  required reviewer.
-- GHCR write access is via `GITHUB_TOKEN` only (no extra secrets configured or
-  needed).
+```bash
+git checkout -b feature/prueba-back develop
+echo "// cambio trivial" >> backend/src/api/app.ts
+git commit -am "test: cambio solo backend"
+git push origin feature/prueba-back
+# Abrir PR feature/prueba-back → develop
+```
 
-## Scenario 1 — Isolated PR validation (US1, FR-000–006)
+**Resultado esperado**: `pr-validation-back` corre; `pr-validation-front` NO
+aparece en los checks del PR. Ver `contracts/gates.md` para la lista de gates
+que deben ejecutarse.
 
-1. Create `feature/test-backend-only`, edit a file under `backend/`, open a PR
-   into `develop`.
-2. **Expect**: only `pr-validation-back` runs; `pr-validation-front` does not
-   trigger. Check completes in <10 min (NFR-001) and reports pass/fail on the PR.
-3. Repeat with a `frontend/`-only change on a separate branch/PR — confirm the
-   mirror image (only `pr-validation-front` runs).
-4. Force a lint failure in the backend change — confirm merge is blocked and the
-   Constitution Guardian call result (if reached) is visible in the check output.
+## 2. Validar bloqueo de merge (FR-004)
 
-## Scenario 2 — `develop` merge → snapshot → `dev` (FR-007–010)
+Repetir el paso 1 pero rompiendo un test unitario de backend
+(`npm test` debe fallar). **Resultado esperado**: el botón de merge del PR
+queda deshabilitado hasta corregir el test.
 
-1. Merge the passing PR from Scenario 1 into `develop`.
-2. **Expect**: `ci-develop-back` runs full CI, publishes
-   `fieldops-backend:{version}-snapshot.{sha}` to GHCR, uploads dist as a workflow
-   artifact, and auto-deploys to `dev`.
-3. Confirm `dev`'s backend health check (`/health`) passes and the deployment is
-   recorded (data-model.md Deployment Record) with `trigger: auto-deploy`.
+## 3. Validar snapshot en develop (User Story 2 / SC-003)
 
-## Scenario 3 — `main` merge → version freeze/bump → `pre` (FR-010b, FR-011–016)
+```bash
+git checkout develop && git merge --no-ff feature/prueba-back
+git push origin develop
+```
 
-1. Note `backend/VERSION` on `develop` (e.g. `1.2.0`).
-2. Merge `develop` into `main` (or the relevant release PR).
-3. **Expect**:
-   - `ci-main-back` tags `main` `backend-v1.2.0`, publishes image `1.2.0`, creates
-     a permanent GitHub Release with dist assets, auto-deploys to `pre`.
-   - A follow-up commit on `develop` bumps `backend/VERSION` to `1.3.0`.
-4. Confirm `pre`'s health check passes before the deployment is marked successful.
-5. Trigger the `prod` promotion `workflow_dispatch` with `image_tag: 1.2.0`.
-   **Expect**: blocked pending the required `prod` environment approval; after
-   approval, `prod` runs the identical `1.2.0` image (no rebuild, SC-002) and its
-   health check gates success.
+**Resultado esperado**: en menos de 15 min, aparece en GHCR
+`ghcr.io/<org>/<repo>/fieldops-back:x.y.z-snapshot.{short-sha}` y un
+workflow artifact con el dist de backend, mismo `short-sha`.
 
-## Scenario 4 — Rollback (FR-011/FR-020, US3)
+## 4. Validar release en main (User Story 3 / SC-004)
 
-1. With `1.2.0` running in `prod`, trigger the rollback `workflow_dispatch` for
-   `component: backend`, `environment: prod`.
-2. **Expect**: the previous artifact (pre-`1.2.0`) redeploys without any build
-   step, health check reruns, and the action completes in <10 min (SC-003).
+```bash
+git checkout main && git merge --no-ff develop && git push origin main
+TAG=$(scripts/release-tag.sh back)   # crea y empuja back-vX.Y.Z sobre main
+```
 
-## Scenario 5 — Guardian-down fail-closed (research.md §2)
+**Resultado esperado**: el push del tag `back-vX.Y.Z` dispara
+`ci-main-back.yml`; GitHub Release visible en la pestaña Releases con ese
+tag, imagen `ghcr.io/<org>/<repo>/fieldops-back:X.Y.Z` en GHCR, dist adjunto
+como asset permanente.
 
-1. Point the Guardian API call at an unreachable endpoint (test-only override).
-2. Open a PR with a valid backend change.
-3. **Expect**: `pr-validation-back` reports failure and blocks merge, even though
-   M9 gates alone would have passed.
+## 5. Validar Capa 2 (opcional, si implementada)
 
-## Cleanup
+Confirmar en Settings → Environments que `prod` requiere aprobación manual
+antes de que el job de deploy a `prod` se ejecute tras el deploy a `pre`.
 
-Delete the disposable `feature/*` branch(es); if `prod`/`pre` were touched with
-test images, roll back to the last real release afterward.
+## Referencias
+
+- `contracts/gates.md` — qué gate corre dónde.
+- `data-model.md` — artefactos y sus relaciones.
+- `../../pipeline-constitution.md` — reglas no negociables verificadas por
+  cada paso anterior.

@@ -1,156 +1,71 @@
-name: ci-develop-back
+name: CI Develop — Backend
+
+# Merge a develop: CI completo + imagen snapshot a GHCR + dist como workflow
+# artifact (90 días). FR-005/FR-006/FR-015.
 
 on:
   push:
     branches: [develop]
-    paths: ["backend/**"]
-  workflow_dispatch: {}
-
-concurrency:
-  group: dev-backend
-  cancel-in-progress: false
+    paths:
+      - "backend/**"
 
 env:
-  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/fieldops-backend
+  IMAGE: ghcr.io/${{ github.repository }}/fieldops-back
+
+permissions:
+  contents: read
 
 jobs:
-  lint:
+  ci:
     runs-on: ubuntu-latest
     permissions:
       contents: read
     defaults:
       run:
         working-directory: backend
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
-        with:
-          node-version: "20"
-          cache: "npm"
-          cache-dependency-path: backend/package-lock.json
-      - run: npm ci
-      - run: npm run lint
-
-  test:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    defaults:
-      run:
-        working-directory: backend
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
-        with:
-          node-version: "20"
-          cache: "npm"
-          cache-dependency-path: backend/package-lock.json
-      - run: npm ci
-      - run: npx prisma generate && npx prisma generate --schema=prisma/schema.test.prisma
-      - run: npm test
-
-  build:
-    needs: [lint, test]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
     outputs:
       version: ${{ steps.version.outputs.version }}
-      short_sha: ${{ steps.version.outputs.short_sha }}
-    defaults:
-      run:
-        working-directory: backend
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "20"
-          cache: "npm"
+          cache: npm
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
-      - run: npx prisma generate
+      - name: Regenerate Prisma clients for this runner (committed client is darwin-arm64)
+        run: npm run prisma:generate
+      - run: npm run lint
+      - run: npm test
       - run: npm run build
-      - id: version
+      - name: Compute snapshot version
+        id: version
         run: |
-          echo "version=$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_OUTPUT"
-          echo "short_sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+          BASE=$(tr -d '[:space:]' < VERSION)
+          SHA=$(git rev-parse --short HEAD)
+          echo "version=${BASE}-snapshot.${SHA}" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: backend-dist-${{ steps.version.outputs.short_sha }}
+          name: dist-backend-${{ steps.version.outputs.version }}
           path: backend/dist
           retention-days: 90
 
-  build-image:
-    needs: build
+  push-image:
+    needs: ci
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-    outputs:
-      image_tag: ${{ steps.tag.outputs.image_tag }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - id: tag
-        run: echo "image_tag=${{ needs.build.outputs.version }}-snapshot.${{ needs.build.outputs.short_sha }}" >> "$GITHUB_OUTPUT"
-      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
-      - name: Build image (no push yet — scan before it ever reaches the registry)
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
-          context: ./backend
-          push: false
-          load: true
-          tags: ${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.image_tag }}
-      - name: Scan image for critical vulnerabilities (FR-007/FR-008)
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
-          image-ref: ${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.image_tag }}
-          format: table
-          severity: CRITICAL
-          exit-code: "1"
-          ignore-unfixed: true
-      - uses: ./.github/actions/ghcr-login
-      - name: Push the scanned image
-        run: docker push "${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.image_tag }}"
-
-  deploy-dev:
-    needs: build-image
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      deployments: write
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - name: Deploy snapshot image to dev
-        run: ./scripts/deploy.sh dev backend "${{ needs.build-image.outputs.image_tag }}"
-      - name: Health check dev
-        id: health
-        uses: ./.github/actions/health-check
-        with:
-          component: backend
-          base_url: ${{ vars.DEV_BACKEND_URL }}
-          environment: dev
-      - name: Set up Node for the acceptance check
-        if: steps.health.outcome == 'success'
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
-        with:
-          node-version: "20"
-      - name: Verify acceptance scenarios against the deployed API (FR-008b)
-        id: acceptance
-        if: steps.health.outcome == 'success'
-        run: node scripts/check-aceptance.js --base-url "${{ vars.DEV_BACKEND_URL }}"
-      - name: Record deployment
-        if: always()
-        uses: ./.github/actions/record-deployment
-        with:
-          environment: dev
-          component: backend
-          artifact_tag: ${{ needs.build-image.outputs.image_tag }}
-          trigger: auto-deploy
-          health_check_result: ${{ (steps.health.outcome == 'success' && steps.acceptance.outcome != 'failure') && 'pass' || 'fail' }}
-
-  code-review-gate:
-    needs: deploy-dev
-    runs-on: ubuntu-latest
-    permissions: {}
-    steps:
-      - run: echo "All gates passed — ci-develop-back certified (FR-022)"
+          context: backend
+          push: true
+          tags: ${{ env.IMAGE }}:${{ needs.ci.outputs.version }}

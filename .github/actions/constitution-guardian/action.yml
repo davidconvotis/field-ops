@@ -1,62 +1,43 @@
-name: "Constitution Guardian Check"
+name: Constitution Guardian
 description: >
-  Calls the Constitution Guardian agent API (contracts/constitution-guardian-api.md).
-  Fail-closed (research.md §2): any timeout, non-2xx, or malformed/missing
-  `verdict` field is treated as `fail` — never as an implicit pass.
+  Invoca Claude Code Action para revisar el diff del PR contra
+  .specify/memory/constitution.md y pipeline-constitution.md. Fail-closed:
+  cualquier error (timeout, API caída) se trata como fallo de la gate, nunca
+  como aprobación implícita (spec.md Edge Cases).
 
 inputs:
-  component:
-    description: "backend | frontend"
+  anthropic-api-key:
+    description: API key de Anthropic (secrets.ANTHROPIC_API_KEY)
     required: true
-  pull_request_number:
-    description: "PR number being validated"
-    required: true
-  head_sha:
-    description: "Commit SHA being validated"
+  github-token:
+    description: Token para que la action comente en el PR
     required: true
 
 runs:
-  using: "composite"
+  using: composite
   steps:
-    - name: Call Constitution Guardian API (fail-closed)
-      shell: bash
-      env:
-        GUARDIAN_API_URL: ${{ vars.CONSTITUTION_GUARDIAN_API_URL }}
-      run: |
-        set -uo pipefail
-
-        if [ -z "${GUARDIAN_API_URL:-}" ]; then
-          echo "::error::CONSTITUTION_GUARDIAN_API_URL repo variable not set — failing closed"
-          exit 1
-        fi
-
-        PAYLOAD=$(cat <<JSON
-        {
-          "repository": "${{ github.repository }}",
-          "pull_request_number": ${{ inputs.pull_request_number }},
-          "component": "${{ inputs.component }}",
-          "head_sha": "${{ inputs.head_sha }}"
-        }
-        JSON
-        )
-
-        HTTP_CODE=$(curl -s -o /tmp/guardian-response.json -w '%{http_code}' \
-          --max-time 30 \
-          -X POST "$GUARDIAN_API_URL" \
-          -H "Content-Type: application/json" \
-          -d "$PAYLOAD" || echo "000")
-
-        if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
-          echo "::error::Constitution Guardian API unreachable/errored (HTTP $HTTP_CODE) — failing closed (research.md §2)"
-          exit 1
-        fi
-
-        VERDICT=$(grep -o '"verdict"\s*:\s*"[a-z]*"' /tmp/guardian-response.json | sed -E 's/.*"([a-z]+)"$/\1/' || true)
-
-        if [ "$VERDICT" != "pass" ]; then
-          echo "::error::Constitution Guardian verdict: ${VERDICT:-<missing/malformed>} — blocking merge"
-          cat /tmp/guardian-response.json || true
-          exit 1
-        fi
-
-        echo "Constitution Guardian verdict: pass"
+    # timeout-minutes en el job que invoca esta action (no aquí) cubre el caso
+    # de timeout/colgado — si el step no termina en el plazo del job, GitHub
+    # Actions marca el job como failed, que es el comportamiento fail-closed
+    # requerido (spec.md Edge Cases: timeout/error de red bloquea el merge).
+    - name: Run Claude Code Action (constitution review)
+      id: guardian
+      uses: anthropics/claude-code-action@f1bd27ca5b54584506e40e17884d90bdaaa1a9b3 # v1.0.173
+      with:
+        anthropic_api_key: ${{ inputs.anthropic-api-key }}
+        github_token: ${{ inputs.github-token }}
+        prompt: |
+          Revisa el diff de este PR contra las reglas NON-NEGOTIABLE de
+          .specify/memory/constitution.md y pipeline-constitution.md.
+          Si encuentras una violación clara de un principio marcado
+          NON-NEGOTIABLE o "DEBE", finaliza tu respuesta con la exit code
+          distinta de cero explicando el principio violado. Si no hay
+          violaciones, finaliza con éxito.
+        # Default model selection (opus + 1M-context beta) failed instantly
+        # (is_error:true, 0 cost, no result text) against this API key —
+        # pin an explicit standard model instead.
+        claude_args: |
+          --model claude-sonnet-5
+        show_full_output: "true"
+      # Sin continue-on-error: cualquier fallo del step (API caída, timeout,
+      # violación detectada) falla este job — fail-closed por defecto.

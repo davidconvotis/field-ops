@@ -1,195 +1,87 @@
-name: ci-main-front
+name: CI Main — Frontend
+
+# Trigger: push de tag front-vX.Y.Z (creado por scripts/release-tag.sh front
+# ANTES del merge a main — no un push genérico de rama, ver spec.md FR-009 /
+# analyze findings C1/C2). CI completo + imagen semver final a GHCR +
+# GitHub Release con dist como asset permanente.
 
 on:
   push:
-    branches: [main]
-    paths: ["frontend/**"]
-  workflow_dispatch: {}
-
-concurrency:
-  group: ci-main-front
-  cancel-in-progress: false
+    tags:
+      - "front-v*.*.*"
 
 env:
-  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/fieldops-frontend
+  IMAGE: ghcr.io/${{ github.repository }}/fieldops-front
+
+permissions:
+  contents: read
 
 jobs:
-  lint:
+  ci:
     runs-on: ubuntu-latest
     permissions:
       contents: read
     defaults:
       run:
         working-directory: frontend
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "20"
-          cache: "npm"
+          cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - run: npm run lint
-
-  test:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    defaults:
-      run:
-        working-directory: frontend
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
-        with:
-          node-version: "20"
-          cache: "npm"
-          cache-dependency-path: frontend/package-lock.json
-      - run: npm ci
       - run: npm test
-
-  build:
-    needs: [lint, test]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
-        with:
-          node-version: "20"
-          cache: "npm"
-          cache-dependency-path: frontend/package-lock.json
-      - run: npm ci
       - run: npm run build
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - name: Extract version from tag
+        id: version
+        run: |
+          TAG="${GITHUB_REF_NAME}"       # front-vX.Y.Z
+          echo "version=${TAG#front-v}" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: frontend-dist-release
+          name: dist-frontend-${{ steps.version.outputs.version }}
           path: frontend/dist
-          retention-days: 1 # transient — the permanent copy is the Release asset created below
+          retention-days: 1 # solo puente hacia el job gh-release; el asset permanente vive en el Release
 
-  # Freezes `main`'s VERSION as the release tag, creates the GitHub Release,
-  # then bumps `develop`'s VERSION to the next minor (research.md §1, FR-010b).
-  # Guarded by a repo-wide `ci-main-front` concurrency group above so two
-  # concurrent merges to `main` cannot race this job (spec.md analyze finding E1).
-  tag-and-release:
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    outputs:
-      release_version: ${{ steps.relver.outputs.version }}
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          fetch-depth: 0
-
-      - id: relver
-        run: echo "version=$(tr -d '[:space:]' < frontend/VERSION)" >> "$GITHUB_OUTPUT"
-
-      - name: Fail closed if tag already exists (race guard)
-        run: |
-          TAG="frontend-v${{ steps.relver.outputs.version }}"
-          if git ls-remote --tags origin "refs/tags/$TAG" | grep -q "$TAG"; then
-            echo "::error::Tag $TAG already exists — refusing to overwrite (possible concurrent main merge race)"
-            exit 1
-          fi
-
-      - name: Create and push release tag
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          TAG="frontend-v${{ steps.relver.outputs.version }}"
-          git tag "$TAG" "${{ github.sha }}"
-          git push origin "$TAG"
-
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: frontend-dist-release
-          path: frontend-dist-release
-
-      - name: Package dist for the Release
-        run: |
-          cd frontend-dist-release && zip -r ../frontend-dist.zip . && cd ..
-
-      - name: Create permanent GitHub Release
-        uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b # v3.0.1
-        with:
-          tag_name: frontend-v${{ steps.relver.outputs.version }}
-          name: frontend v${{ steps.relver.outputs.version }}
-          files: frontend-dist.zip
-
-      - name: Bump develop's frontend/VERSION to next minor
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git fetch origin develop
-          git checkout -B develop origin/develop
-          OLD=$(./scripts/bump-version.sh frontend/VERSION)
-          NEW=$(tr -d '[:space:]' < frontend/VERSION)
-          echo "Bumping develop frontend/VERSION: $OLD -> $NEW"
-          git add frontend/VERSION
-          git commit -m "chore: bump frontend VERSION to $NEW [skip ci]"
-          git push origin develop
-
-  build-image:
-    needs: tag-and-release
+  push-image:
+    needs: ci
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
-      - name: Build image (no push yet — scan before it ever reaches the registry)
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
-          context: ./frontend
-          push: false
-          load: true
-          tags: ${{ env.IMAGE_NAME }}:${{ needs.tag-and-release.outputs.release_version }}
-      - name: Scan image for critical vulnerabilities (FR-014/FR-014b)
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
-          image-ref: ${{ env.IMAGE_NAME }}:${{ needs.tag-and-release.outputs.release_version }}
-          format: table
-          severity: CRITICAL
-          exit-code: "1"
-          ignore-unfixed: true
-      - uses: ./.github/actions/ghcr-login
-      - name: Push the scanned image
-        run: docker push "${{ env.IMAGE_NAME }}:${{ needs.tag-and-release.outputs.release_version }}"
+          context: frontend
+          push: true
+          tags: ${{ env.IMAGE }}:${{ needs.ci.outputs.version }}
 
-  deploy-pre:
-    needs: [tag-and-release, build-image]
+  gh-release:
+    needs: ci
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      deployments: write
+      contents: write
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - name: Deploy release image to pre
-        run: ./scripts/deploy.sh pre frontend "${{ needs.tag-and-release.outputs.release_version }}"
-      - name: Health check pre
-        id: health
-        uses: ./.github/actions/health-check
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          component: frontend
-          base_url: ${{ vars.PRE_FRONTEND_URL }}
-          environment: pre
-      - name: Record deployment
-        if: always()
-        uses: ./.github/actions/record-deployment
+          name: dist-frontend-${{ needs.ci.outputs.version }}
+          path: dist
+      - name: Compress dist (same build as ci job — no rebuild)
+        run: tar -czf dist-frontend-${{ needs.ci.outputs.version }}.tar.gz -C dist .
+      - uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
-          environment: pre
-          component: frontend
-          artifact_tag: ${{ needs.tag-and-release.outputs.release_version }}
-          trigger: auto-deploy
-          health_check_result: ${{ steps.health.outcome == 'success' && 'pass' || 'fail' }}
-
-  code-review-gate:
-    needs: deploy-pre
-    runs-on: ubuntu-latest
-    permissions: {}
-    steps:
-      - run: echo "All gates passed — ci-main-front certified (FR-022)"
+          tag_name: ${{ github.ref_name }}
+          name: "Frontend ${{ needs.ci.outputs.version }}"
+          files: dist-frontend-${{ needs.ci.outputs.version }}.tar.gz
