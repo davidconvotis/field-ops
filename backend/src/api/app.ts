@@ -38,3 +38,4 @@ if (require.main === module) {
 }
 
 module.exports = app;
+// smoke test pr-validation-back — safe to delete after test
