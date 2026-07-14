@@ -37,6 +37,7 @@ runs:
         # (is_error:true, 0 cost, no result text) against this API key —
         # pin an explicit standard model instead.
         claude_args: |
-          --model claude-sonnet-5 --debug
+          --model claude-sonnet-5
+        show_full_output: "true"
       # Sin continue-on-error: cualquier fallo del step (API caída, timeout,
       # violación detectada) falla este job — fail-closed por defecto.
