@@ -8,6 +8,15 @@
 
 **Input**: User description: "Pipeline CI/CD vía Spec-Kit para FieldOps — 6 workflows (pr-validation-front/back, ci-develop-front/back, ci-main-front/back), gates M9, versionado semver, publicación GHCR + artefactos dist, CD opcional dev/pre/prod"
 
+## Clarifications
+
+### Session 2026-07-14
+
+- Q: ¿Qué patrón exacto de `paths:` filter detecta cambios por componente? → A: `backend/**` y `frontend/**`.
+- Q: ¿Cómo se calcula la versión snapshot en `develop`? → A: leer `x.y.z` de `backend/VERSION` / `frontend/VERSION` y componer `x.y.z-snapshot.{short-sha}`.
+- Q: ¿Quién crea el tag semver antes del merge a `main`? → A: `scripts/bump-version.sh` automatizado (no manual).
+- Q: ¿Qué contenido exacto incluye el dist de develop/main? → A: build compilado del componente (`dist/`/`build/`), comprimido, sin `node_modules` ni fuente.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Validación de PR bloquea código roto (Priority: P1)
@@ -97,9 +106,9 @@ verificar que se crea un GitHub Release con el dist adjunto y la imagen
 - ¿Qué pasa si un PR toca `frontend/` y `backend/` a la vez? Ambos workflows
   de validación deben correr en paralelo, cada uno evaluando solo su propio
   conjunto de gates.
-- ¿Qué pasa si se intenta mergear a `main` sin tag semver creado? El workflow
-  de `ci-main-*` debe fallar o bloquear la publicación de imagen versión
-  final (comportamiento exacto sujeto a resolución en `/speckit-clarify`).
+- ¿Qué pasa si se intenta mergear a `main` sin tag semver creado por
+  `scripts/bump-version.sh`? El workflow de `ci-main-*` debe fallar y no
+  publicar imagen versión final ni Release.
 - ¿Qué pasa si Trivy detecta una vulnerabilidad crítica en la imagen? El job
   de build/push debe fallar y no publicar la imagen a GHCR.
 - ¿Qué pasa si el guardián de Constitución (Claude Code Action) no puede
@@ -122,9 +131,10 @@ verificar que se crea un GitHub Release con el dist adjunto y la imagen
   con cambios en `frontend/`, el sistema DEBE ejecutar
   `pr-validation-front.yml` con las gates: lint+test, Gitleaks, guardián de
   Constitución.
-- **FR-003**: SI un PR no contiene cambios en `backend/`, ENTONCES el sistema
-  NO DEBE ejecutar `pr-validation-back.yml` (y análogamente para frontend),
-  usando filtros de ruta (`paths:`) en el trigger.
+- **FR-003**: SI un PR no contiene cambios en `backend/**`, ENTONCES el
+  sistema NO DEBE ejecutar `pr-validation-back.yml` (y análogamente
+  `frontend/**` para frontend), usando filtros de ruta (`paths:`) exactos
+  `backend/**` / `frontend/**` en el trigger.
 - **FR-004**: SI cualquier gate de un workflow de validación de PR falla,
   ENTONCES el sistema DEBE bloquear el merge del PR.
 
@@ -133,11 +143,13 @@ verificar que se crea un GitHub Release con el dist adjunto y la imagen
 - **FR-005**: CUANDO se hace merge a `develop` con cambios en `backend/`
   (o `frontend/`), el sistema DEBE ejecutar el CI completo del componente
   afectado, construir una imagen Docker etiquetada
-  `x.y.z-snapshot.{short-sha}`, publicarla en GHCR, y subir el dist
-  comprimido como workflow artifact con retención de 90 días.
-- **FR-006**: El sistema DEBE calcular la versión snapshot a partir de la
-  versión base declarada en el repositorio más el short-sha del commit
-  actual (formato exacto sujeto a `/speckit-clarify`).
+  `x.y.z-snapshot.{short-sha}`, publicarla en GHCR, y subir como workflow
+  artifact (retención 90 días) el build compilado del componente
+  (`dist/`/`build/`) comprimido, sin `node_modules` ni código fuente.
+- **FR-006**: El sistema DEBE calcular la versión snapshot leyendo `x.y.z`
+  del archivo `VERSION` del componente (`backend/VERSION` /
+  `frontend/VERSION`) y componiendo `x.y.z-snapshot.{short-sha}` con el
+  short-sha del commit actual.
 - **FR-007 (opcional, Capa 2)**: TRAS publicar la imagen snapshot en GHCR, el
   sistema PUEDE desplegar automáticamente al entorno `dev` sin aprobación
   manual.
@@ -147,11 +159,13 @@ verificar que se crea un GitHub Release con el dist adjunto y la imagen
 - **FR-008**: CUANDO se hace merge a `main` con cambios en `backend/` (o
   `frontend/`), el sistema DEBE ejecutar el CI completo del componente
   afectado, construir una imagen Docker con la versión semver final derivada
-  del tag de git, publicarla en GHCR, y crear un GitHub Release con el dist
-  comprimido como asset permanente.
+  del tag de git, publicarla en GHCR, y crear un GitHub Release con el build
+  compilado del componente (`dist/`/`build/`) comprimido como asset
+  permanente.
 - **FR-009**: El sistema DEBE derivar la versión final de imagen y Release
-  del tag de git creado antes del merge a `main` (responsable de creación del
-  tag sujeto a `/speckit-clarify`).
+  del tag de git creado antes del merge a `main` mediante
+  `scripts/bump-version.sh`, ejecutado de forma automatizada (no manual)
+  como parte del flujo de release.
 - **FR-010 (opcional, Capa 2)**: TRAS publicar el Release, el sistema PUEDE
   desplegar automáticamente a `pre`, y DEBE requerir aprobación manual
   (GitHub Environment con reviewer) antes de desplegar a `prod`.
@@ -216,8 +230,10 @@ verificar que se crea un GitHub Release con el dist adjunto y la imagen
   integran en los nuevos workflows, no se rediseñan.
 - El repositorio es público o el plan de GitHub incluye GHCR sin costo
   adicional relevante para este alcance.
-- La creación de tags semver para `main` es un paso manual del desarrollador
-  salvo que `/speckit-clarify` determine automatización.
+- La creación de tags semver para `main` está automatizada vía
+  `scripts/bump-version.sh` (ya presente en el repo), no es un paso manual.
+- `backend/VERSION` y `frontend/VERSION` (ya presentes en el repo) son la
+  fuente de verdad de la versión base `x.y.z` para el cálculo de snapshot.
 - El CD a `dev`/`pre`/`prod` (Capa 2) es opcional y no bloqueante para
   considerar completa la Capa 1 mínima del reto.
 - Existe un GitHub Environment `production` configurable con reviewer para
