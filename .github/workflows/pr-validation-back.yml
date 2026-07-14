@@ -119,10 +119,13 @@ jobs:
       - run: npm run prisma:generate
       - run: npm run prisma:migrate
       - run: npm run seed
+      - run: npm run build
       - name: Start API in background
         env:
           NODE_ENV: production
-        run: npm run build && node dist/src/api/app.js &
+        # nohup + disown: otherwise the backgrounded node process gets
+        # killed when this step's shell exits, before "Wait for API" runs.
+        run: nohup node dist/src/api/app.js > /tmp/api.log 2>&1 & disown
       - name: Wait for API
         run: npx wait-on http://localhost:3000/health -t 30000
       - run: node scripts/check-acceptance.js
