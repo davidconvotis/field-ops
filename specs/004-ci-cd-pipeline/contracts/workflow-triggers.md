@@ -8,7 +8,7 @@ promotion and rollback).
 
 | Workflow | Trigger | Path filter |
 |---|---|---|
-| `pr-validation-back` | `pull_request` (opened/synchronize) targeting `develop` | `backend/**` |
+| `pr-validation-back` | `pull_request` (opened/synchronize) targeting `develop` | `backend/**`, `contracts/**` (FR-000b — the OpenAPI contract lives outside `backend/**`; without this, Spectral/oasdiff would never run on a contract-only change) |
 | `pr-validation-front` | `pull_request` (opened/synchronize) targeting `develop` | `frontend/**` |
 | `ci-develop-back` | `push` to `develop` | `backend/**` |
 | `ci-develop-front` | `push` to `develop` | `frontend/**` |
@@ -27,7 +27,8 @@ promotion and rollback).
 
 Gated by a GitHub `environment: prod` protection rule requiring one approval
 (research.md §4). Rejects (FR-013/016) if `image_tag` isn't the one currently
-running in `pre`.
+running in `pre`, OR (backend only, FR-011c) if that `pre` deployment's
+`check-aceptance.js` run did not pass.
 
 ### Rollback (`workflow_dispatch`)
 

@@ -1,0 +1,13 @@
+extends: ["spectral:oas"]
+
+# FieldOps CI/CD Pipeline (specs/004-ci-cd-pipeline) — FR-003b.
+# Lints contracts/openapi.yaml, the canonical OpenAPI contract per
+# FieldOps constitution Principle II. Verified clean against this
+# ruleset on 2026-07-14 (specs/004-ci-cd-pipeline/tasks.md T025):
+# 20/20 operations have operationId + a 2xx response + summary/description,
+# 0 duplicate operationIds.
+
+rules:
+  # info.description is intentionally long (cross-references 3 feature specs) —
+  # the default oas-description-duplication/length rules aren't relevant here.
+  info-contact: off

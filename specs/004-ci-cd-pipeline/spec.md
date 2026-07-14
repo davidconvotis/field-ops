@@ -139,51 +139,85 @@ component MUST NOT trigger the other component's workflow (constitution Principl
   as any change under `backend/**`, and "changes affecting the frontend
   component" as any change under `frontend/**` — the two `paths:` filters used
   by every workflow that scopes itself to one component.
+- **FR-000b**: `pr-validation-back` SHALL additionally trigger on any change
+  under `contracts/**` (the OpenAPI contract, stored per FieldOps constitution
+  Principle II at `contracts/openapi.yaml`, NOT under `backend/**`) — otherwise
+  the Spectral/oasdiff gates in FR-003b/FR-003c could never fire on the file
+  they exist to protect. This additional path applies only to
+  `pr-validation-back`'s trigger, not to `ci-develop-back`/`ci-main-back`
+  (a contract-only change with no `backend/**` change does not need a
+  rebuild/redeploy).
 
 **`pr-validation-back`**
 
 - **FR-001**: When a pull request from `feature/*` targeting `develop` is opened or
   updated with changes affecting the backend component, the system SHALL run all
-  M9 validation gates (lint, test, build) for the backend AND call the
-  Constitution Guardian agent API, reporting a combined pass/fail status on that
-  pull request.
-- **FR-002**: If either the M9 gates or the Constitution Guardian check fails, then
-  the system SHALL block merge of that pull request.
+  M9 validation gates (lint, test, build) for the backend, validate the OpenAPI
+  contract with Spectral, detect breaking changes against the contract currently
+  on `develop` with oasdiff, scan the changed files for committed secrets with
+  Gitleaks, AND call the Constitution Guardian agent API, reporting a combined
+  pass/fail status on that pull request.
+- **FR-002**: If any of the M9 gates, the Spectral lint, the oasdiff breaking-change
+  check, the Gitleaks scan, or the Constitution Guardian check fails, then the
+  system SHALL block merge of that pull request.
 - **FR-003**: While `pr-validation-back` is running or has failed, the system SHALL
   NOT publish a backend build artifact.
+- **FR-003b**: The Spectral gate SHALL fail the pull request if
+  `contracts/openapi.yaml` (the canonical contract per FieldOps constitution
+  Principle II) does not lint clean against the project's ruleset.
+- **FR-003c**: The oasdiff gate SHALL fail the pull request if it detects a
+  breaking change (per oasdiff's breaking-changes classification) between
+  `contracts/openapi.yaml` on `develop` and the same file in the pull request,
+  unless the pull request title contains the literal marker `BREAKING:` (an
+  explicit, greppable declaration that the break is intentional — no separate
+  approval mechanism is required for this feature).
+- **FR-003d**: The Gitleaks gate SHALL fail the pull request if it detects any
+  committed secret in the diff introduced by that pull request.
 
 **`pr-validation-front`**
 
 - **FR-004**: When a pull request from `feature/*` targeting `develop` is opened or
   updated with changes affecting the frontend component, the system SHALL run all
-  M9 validation gates (lint, test, build) for the frontend AND call the
-  Constitution Guardian agent API, reporting a combined pass/fail status on that
-  pull request, independently of `pr-validation-back`.
-- **FR-005**: If either the M9 gates or the Constitution Guardian check fails, then
-  the system SHALL block merge of that pull request.
+  M9 validation gates (lint, test, build) for the frontend, scan the changed files
+  for committed secrets with Gitleaks, AND call the Constitution Guardian agent
+  API, reporting a combined pass/fail status on that pull request, independently
+  of `pr-validation-back`.
+- **FR-005**: If any of the M9 gates, the Gitleaks scan, or the Constitution
+  Guardian check fails, then the system SHALL block merge of that pull request.
 - **FR-006**: While `pr-validation-front` is running or has failed, the system
   SHALL NOT publish a frontend build artifact.
+- **FR-006b**: The Gitleaks gate SHALL fail the pull request if it detects any
+  committed secret in the diff introduced by that pull request.
 
 **`ci-develop-back`**
 
 - **FR-007**: When a change affecting the backend component is merged to
-  `develop`, the system SHALL run the full backend CI, publish a backend
-  **snapshot** image tagged `x.y.z-snapshot.{sha}` (short commit SHA) to the
-  registry, store its build distributables as a workflow artifact with 90-day
-  retention, and deploy the image to `dev` automatically.
-- **FR-008**: If backend CI fails on `develop`, then the system SHALL NOT publish
-  the snapshot image or deploy to `dev`, and SHALL report the failure.
+  `develop`, the system SHALL run the full backend CI, scan the built backend
+  image for vulnerabilities with Trivy, publish a backend **snapshot** image
+  tagged `x.y.z-snapshot.{sha}` (short commit SHA) to the registry, store its
+  build distributables as a workflow artifact with 90-day retention, and deploy
+  the image to `dev` automatically.
+- **FR-008**: If backend CI fails on `develop`, or the Trivy scan finds a
+  critical-severity vulnerability in the built image, then the system SHALL NOT
+  publish the snapshot image or deploy to `dev`, and SHALL report the failure.
+- **FR-008b**: After `deploy-dev` and its health check succeed, the system SHALL
+  run `check-aceptance.js` against the backend API now running in `dev`,
+  verifying the acceptance scenarios in `spec.md` hold against the real deployed
+  API, and SHALL report its pass/fail result. If `check-aceptance.js` fails, the
+  deployment SHALL be flagged unhealthy per FR-019 (same consequence as a
+  failed health check), even though `health-check-dev` itself already passed.
 
 **`ci-develop-front`**
 
 - **FR-009**: When a change affecting the frontend component is merged to
-  `develop`, the system SHALL run the full frontend CI, publish a frontend
-  **snapshot** image tagged `x.y.z-snapshot.{sha}` (short commit SHA) to the
-  registry, store its build distributables as a workflow artifact with 90-day
-  retention, and deploy the image to `dev` automatically, independently of
-  `ci-develop-back`.
-- **FR-010**: If frontend CI fails on `develop`, then the system SHALL NOT publish
-  the snapshot image or deploy to `dev`, and SHALL report the failure.
+  `develop`, the system SHALL run the full frontend CI, scan the built frontend
+  image for vulnerabilities with Trivy, publish a frontend **snapshot** image
+  tagged `x.y.z-snapshot.{sha}` (short commit SHA) to the registry, store its
+  build distributables as a workflow artifact with 90-day retention, and deploy
+  the image to `dev` automatically, independently of `ci-develop-back`.
+- **FR-010**: If frontend CI fails on `develop`, or the Trivy scan finds a
+  critical-severity vulnerability in the built image, then the system SHALL NOT
+  publish the snapshot image or deploy to `dev`, and SHALL report the failure.
 
 **`ci-main-back`**
 
@@ -194,10 +228,21 @@ component MUST NOT trigger the other component's workflow (constitution Principl
   `1.2` → `1.3`) so `develop` is always ahead of the last released version — no
   manual tagging step by a developer or release manager is required.
 - **FR-011**: When a change affecting the backend component is merged to `main`,
-  the system SHALL run the full backend CI, publish a backend **final-version**
-  image tagged `x.y.z` read directly from the semver tag created per FR-010b,
-  attach its build distributables as permanent GitHub Release assets (no
-  expiry), and deploy that image to `pre` automatically.
+  the system SHALL run the full backend CI, scan the built backend image for
+  vulnerabilities with Trivy, publish a backend **final-version** image tagged
+  `x.y.z` read directly from the semver tag created per FR-010b, attach its
+  build distributables as permanent GitHub Release assets (no expiry), and
+  deploy that image to `pre` automatically.
+- **FR-011b**: If the Trivy scan finds a critical-severity vulnerability in the
+  built backend image, the system SHALL NOT publish the final-version image or
+  deploy to `pre`, and SHALL report the failure.
+- **FR-011c**: After `deploy-pre` and its health check succeed, the system SHALL
+  run `check-aceptance.js` against the backend API now running in `pre`,
+  verifying the acceptance scenarios in `spec.md` hold against the real deployed
+  API, and SHALL report its pass/fail result. If `check-aceptance.js` fails, the
+  deployment SHALL be flagged unhealthy per FR-019, and the release manager
+  SHALL NOT be permitted to promote that image to `prod` (FR-012) until a new
+  `pre` deployment passes both the health check and `check-aceptance.js`.
 - **FR-012**: When a backend final-version image is running correctly in `pre`,
   the system SHALL allow a release manager to trigger promotion of that exact same
   image to `prod` without rebuilding.
@@ -208,11 +253,14 @@ component MUST NOT trigger the other component's workflow (constitution Principl
 **`ci-main-front`**
 
 - **FR-014**: When a change affecting the frontend component is merged to `main`,
-  the system SHALL run the full frontend CI, publish a frontend **final-version**
-  image tagged `x.y.z` read directly from the semver tag created per FR-010b,
-  attach its build distributables as permanent GitHub Release assets (no
-  expiry), and deploy that image to `pre` automatically, independently of
-  `ci-main-back`.
+  the system SHALL run the full frontend CI, scan the built frontend image for
+  vulnerabilities with Trivy, publish a frontend **final-version** image tagged
+  `x.y.z` read directly from the semver tag created per FR-010b, attach its
+  build distributables as permanent GitHub Release assets (no expiry), and
+  deploy that image to `pre` automatically, independently of `ci-main-back`.
+- **FR-014b**: If the Trivy scan finds a critical-severity vulnerability in the
+  built frontend image, the system SHALL NOT publish the final-version image or
+  deploy to `pre`, and SHALL report the failure.
 - **FR-015**: When a frontend final-version image is running correctly in `pre`,
   the system SHALL allow a release manager to trigger promotion of that exact same
   image to `prod` without rebuilding.
@@ -236,6 +284,15 @@ component MUST NOT trigger the other component's workflow (constitution Principl
 - **FR-021**: The system SHALL record, for every deployment and rollback across all
   6 workflows, which artifact was deployed, to which environment, when, and by what
   trigger (auto-deploy, manual promotion, or rollback).
+- **FR-022**: Each of the 6 workflows SHALL end with a final `code-review-gate` job
+  (Job Dummy) that runs only if every prior gate in that workflow succeeded, and
+  that certifies on the pull request or commit that all gates for that workflow
+  passed. It performs no independent check of its own — it is a visible
+  pass/fail seal, not a real code-review integration (that integration is out of
+  scope for this feature).
+- **FR-023**: If any gate earlier in the workflow fails, then `code-review-gate`
+  SHALL NOT run, and the workflow SHALL report as failed without a certification
+  seal.
 
 ### Non-Functional Requirements
 
@@ -259,12 +316,12 @@ component MUST NOT trigger the other component's workflow (constitution Principl
 
 | Workflow | Gate that runs | Blocks merge? | What gets published |
 |---|---|---|---|
-| `pr-validation-back` | M9 gates (lint+test+build, backend) + Constitution Guardian API call | Yes, on failure of either | Nothing (validation only) |
-| `pr-validation-front` | M9 gates (lint+test+build, frontend) + Constitution Guardian API call | Yes, on failure of either | Nothing (validation only) |
-| `ci-develop-back` | Full backend CI, must pass to proceed | N/A (post-merge) | Backend **snapshot** image `x.y.z-snapshot.{sha}` in registry + dist as 90-day workflow artifact; auto-deployed to `dev` |
-| `ci-develop-front` | Full frontend CI, must pass to proceed | N/A (post-merge) | Frontend **snapshot** image `x.y.z-snapshot.{sha}` in registry + dist as 90-day workflow artifact; auto-deployed to `dev` |
-| `ci-main-back` | Full backend CI, must pass to proceed | N/A (post-merge) | Auto-tagged `x.y.z`; backend **final-version** image + permanent GitHub Release asset; auto-deployed to `pre`; promotable to `prod` (manual) |
-| `ci-main-front` | Full frontend CI, must pass to proceed | N/A (post-merge) | Auto-tagged `x.y.z`; frontend **final-version** image + permanent GitHub Release asset; auto-deployed to `pre`; promotable to `prod` (manual) |
+| `pr-validation-back` | M9 gates (lint+test+build, backend) + Spectral (OpenAPI lint) + oasdiff (breaking changes) + Gitleaks (secrets) + Constitution Guardian API call + `code-review-gate` seal | Yes, on failure of any | Nothing (validation only) |
+| `pr-validation-front` | M9 gates (lint+test+build, frontend) + Gitleaks (secrets) + Constitution Guardian API call + `code-review-gate` seal | Yes, on failure of any | Nothing (validation only) |
+| `ci-develop-back` | Full backend CI + Trivy image scan, must pass to proceed; `check-aceptance.js` runs post-deploy | N/A (post-merge) | Backend **snapshot** image `x.y.z-snapshot.{sha}` in registry + dist as 90-day workflow artifact; auto-deployed to `dev` |
+| `ci-develop-front` | Full frontend CI + Trivy image scan, must pass to proceed | N/A (post-merge) | Frontend **snapshot** image `x.y.z-snapshot.{sha}` in registry + dist as 90-day workflow artifact; auto-deployed to `dev` |
+| `ci-main-back` | Full backend CI + Trivy image scan, must pass to proceed; `check-aceptance.js` runs post-deploy | N/A (post-merge) | Auto-tagged `x.y.z`; backend **final-version** image + permanent GitHub Release asset; auto-deployed to `pre`; promotable to `prod` (manual) |
+| `ci-main-front` | Full frontend CI + Trivy image scan, must pass to proceed | N/A (post-merge) | Auto-tagged `x.y.z`; frontend **final-version** image + permanent GitHub Release asset; auto-deployed to `pre`; promotable to `prod` (manual) |
 
 ### Key Entities
 
@@ -275,6 +332,21 @@ component MUST NOT trigger the other component's workflow (constitution Principl
 - **Constitution Guardian Check**: An automated gate, called via API during PR
   validation, that verifies the change complies with project constitution
   principles before the M9 gates' result is considered final.
+- **OpenAPI Contract Gate**: The Spectral lint + oasdiff breaking-change check run
+  in `pr-validation-back` against `contracts/openapi.yaml` (per FR-000b, this
+  workflow additionally triggers on `contracts/**`); blocks merge on lint
+  failure or a breaking change not marked `BREAKING:` in the PR title.
+- **Secret Scan**: The Gitleaks scan run in `pr-validation-back` and
+  `pr-validation-front` against the PR's diff; blocks merge if a secret is found.
+- **Image Vulnerability Scan**: The Trivy scan run against the built Docker image
+  in `ci-develop-*`/`ci-main-*`, before `push-image`; blocks publish/deploy on a
+  critical-severity finding.
+- **Acceptance Check**: The `check-aceptance.js` script, run after a successful
+  post-deploy health check in `ci-develop-back`/`ci-main-back`, that exercises the
+  acceptance scenarios in this spec against the real deployed backend API.
+- **Code Review Gate (Job Dummy)**: A final, no-op certification job in each of
+  the 6 workflows that only runs — and only succeeds — if every prior gate in
+  that workflow run succeeded; a visible seal, not a real review integration.
 - **GitHub Release**: The versioned, artifact-bearing record created for every
   `main`-merge final-version image, used as the reference for what is deployable
   to `pre`/`prod`.

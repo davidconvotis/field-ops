@@ -118,6 +118,27 @@ feature land in `.github/workflows/`, `.github/actions/`, `scripts/`, plus one
 
 ---
 
+## Phase 7: Additional Quality & Security Gates (Spectral, oasdiff, Gitleaks, Trivy, check-aceptance.js, Job Dummy)
+
+**Purpose**: Implements the gates added to spec.md after the original 6-workflow implementation (FR-003b/c/d, FR-006b, FR-008b, FR-011b/c, FR-014b, FR-022/023). US1's PR-validation workflows and US2's CI/CD workflows already exist (Phases 3-4) — this phase edits them in place rather than creating new workflow files.
+
+- [X] T025 [P] Verified `contracts/openapi.yaml` (already exists per FieldOps constitution Principle II) — structural check (every operation has `operationId` + a 2xx response + summary/description, 0 duplicate operationIds) confirms 20/20 operations clean; documented in `.spectral.yaml` header (FR-003b)
+- [X] T026 [P] Created `.spectral.yaml` at repo root — `extends: [spectral:oas]`, applied to `contracts/openapi.yaml` (FR-003b)
+- [X] T027 [P] Created `.gitleaks.toml` at repo root — extends the default ruleset, allowlists `node_modules/`, `dist/`, test fixtures; shared by `pr-validation-back`/`pr-validation-front` (FR-003d/FR-006b)
+- [X] T028 [P] [US2] Created `scripts/check-aceptance.js` — Node script (`--base-url` arg, uses global `fetch`, no deps), checks: health endpoint, RBAC double-layer 401s on `/orders`/`/clients` with no/bad token, login endpoint returns 401 (not 5xx) on bad credentials; exits non-zero on any failure — verified locally against an unreachable URL (fails closed, exit 1)
+- [X] T029 [US1] Updated `.github/workflows/pr-validation-back.yml` — added `contracts/**` to trigger `paths:` (FR-000b); added `gitleaks` job (checksum-pinned CLI v8.30.1, not `gitleaks-action` — that requires a paid `GITLEAKS_LICENSE` org secret, forbidden by Principle VI), `spectral` job (`stoplightio/spectral-action@6416fd0` v0.8.13), `oasdiff` job (`oasdiff/oasdiff-action/breaking@024f6c3` v0.1.6, skips on a `BREAKING:` PR-title marker, `review:false`/`github-token:''` to avoid external upload and extra permissions), `constitution-guardian` now `needs: [build, gitleaks, oasdiff]`, and a `code-review-gate` job (`needs: constitution-guardian`, no-op) — FR-000b/FR-001-003d/FR-022-023
+- [X] T030 [US1] Updated `.github/workflows/pr-validation-front.yml` — added `gitleaks` job (same pinned CLI), `constitution-guardian` now `needs: [build, gitleaks]`, and a trailing `code-review-gate` job — FR-004-006b/FR-022-023
+- [X] T031 [US2] Updated `.github/workflows/ci-develop-back.yml` — `build-image` now builds locally (`push:false, load:true`), scans with `aquasecurity/trivy-action@ed142fd` (v0.36.0, severity CRITICAL, exit-code 1) before a separate `docker push` step (no rebuild, single build); `deploy-dev` gained a `check-aceptance` step (`if: steps.health.outcome == 'success'`) running T028 against `vars.DEV_BACKEND_URL`, folded into `record-deployment`'s `health_check_result`; trailing `code-review-gate` job — FR-007/008/008b, FR-022-023
+- [X] T032 [US2] Updated `.github/workflows/ci-develop-front.yml` — same Trivy-before-push restructure, trailing `code-review-gate`; no `check-aceptance` step (no API to target) — FR-009/010, FR-022-023
+- [X] T033 [US2] Updated `.github/workflows/ci-main-back.yml` — same Trivy-before-push restructure on `build-image`; `deploy-pre` gained a `check-aceptance` step against `vars.PRE_BACKEND_URL`, folded into `health_check_result`; trailing `code-review-gate` — FR-011/011b/011c, FR-022-023
+- [X] T034 [US2] Updated `.github/workflows/ci-main-front.yml` — same Trivy-before-push restructure, trailing `code-review-gate`; no `check-aceptance` step — FR-014/014b, FR-022-023
+- [X] T035 Audited all `uses:` added in T029-T034 — `stoplightio/spectral-action@6416fd018ae38e60136775066eb3e98172143141`, `oasdiff/oasdiff-action/breaking@024f6c399f9a21ada1addb0f9a36ce1bfac995f1`, `aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25` — all fetched live from the GitHub API (`/repos/{owner}/{repo}/tags`), all full 40-char commit SHAs, 0 mutable tags. Gitleaks uses a checksum-pinned CLI binary (sha256 verified inline), not a GitHub Action, so Principle I's "no mutable tag" applies via the pinned release version + checksum instead.
+- [X] T036 [US2] Updated `.github/workflows/promote-prod.yml` — `verify-pre-artifact` now also calls `listDeploymentStatuses` on the matched deployment and rejects promotion if the latest state isn't `success`, in addition to the existing `image_tag` identity check; since `deploy-pre`'s `health_check_result` already folds in `check-aceptance.js`'s outcome for backend, this single generic check covers FR-011c/FR-012 with no backend-specific branching
+
+**Checkpoint**: All 6 named workflows now run the full gate set from the updated spec.md (M9 + Spectral/oasdiff/Gitleaks + Constitution Guardian on PRs; Trivy + check-aceptance.js post-deploy on CI) and end with a `code-review-gate` certification seal.
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
@@ -128,12 +149,14 @@ feature land in `.github/workflows/`, `.github/actions/`, `scripts/`, plus one
 - **US2 (Phase 4)**: Depends on Phase 1 (T001-T004) AND Phase 2 (T006, T008)
 - **US3 (Phase 5)**: Depends on Phase 2 (T006, T007, T008) AND on US2 existing conceptually (there must be a deployment to roll back from) — implement after US2 for a meaningful independent test, though the workflow file itself has no file-level dependency on US2's workflow files
 - **Polish (Phase 6)**: Depends on all 3 stories being complete
+- **Additional Gates (Phase 7)**: Depends on Phase 3 (`pr-validation-{back,front}.yml` must exist to edit) and Phase 4 (`ci-develop-*`/`ci-main-*.yml` must exist to edit) — this phase edits existing files, it does not stand alone
 
 ### User Story Dependencies
 
 - **US1 (P1)**: No dependency on US2/US3 — fully independent
 - **US2 (P2)**: No dependency on US1's workflow files (independent artifacts), but delivers no value without Phase 1/2 foundations
 - **US3 (P3)**: Reuses US2's `record-deployment` history to have something to roll back to — implement after US2 is deployed at least once for realistic testing
+- **Additional Gates (Phase 7)**: T029/T030 extend US1's workflows; T031-T034 extend US2's workflows — both edit files US1/US2 already created, so treat Phase 7 as an amendment to those stories, not a new independent story
 
 ### Parallel Opportunities
 
@@ -144,6 +167,7 @@ feature land in `.github/workflows/`, `.github/actions/`, `scripts/`, plus one
 - T014/T015 (ci-develop-*) parallel with each other and with T016/T017 (ci-main-*)
 - T019 (US3) parallel with Phase 4 tasks once Phase 2 is done
 - T021-T023 (Polish) all parallel; T024 runs last
+- T025-T028 (Phase 7 new artifacts) all parallel with each other; T029/T030 depend on T025-T027; T031/T033 depend on T028; T032/T034 have no dependency on T028; T036 depends on T033 (Deployment Record health field must exist first); T035 runs after T029-T034; T036 last
 
 ---
 
@@ -173,6 +197,7 @@ Task: "Create .github/workflows/pr-validation-front.yml"
 2. Add Foundational (T006-T008) → US2 (T013-T018) → validate Scenarios 2/3 → `dev`/`pre`/`prod` promotion live
 3. Add US3 (T019-T020) → validate Scenario 4 → rollback safety net live
 4. Polish (T021-T024) → full quickstart.md pass
+5. Add Phase 7 (T025-T035) → Spectral/oasdiff/Gitleaks gate PRs, Trivy gates images, `check-aceptance.js` gates backend deploys, `code-review-gate` certifies every run
 
 ### Parallel Team Strategy
 

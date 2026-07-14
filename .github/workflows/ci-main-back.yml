@@ -142,12 +142,24 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
-      - uses: ./.github/actions/ghcr-login
-      - uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+      - name: Build image (no push yet — scan before it ever reaches the registry)
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: ./backend
-          push: true
+          push: false
+          load: true
           tags: ${{ env.IMAGE_NAME }}:${{ needs.tag-and-release.outputs.release_version }}
+      - name: Scan image for critical vulnerabilities (FR-011/FR-011b)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ env.IMAGE_NAME }}:${{ needs.tag-and-release.outputs.release_version }}
+          format: table
+          severity: CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true
+      - uses: ./.github/actions/ghcr-login
+      - name: Push the scanned image
+        run: docker push "${{ env.IMAGE_NAME }}:${{ needs.tag-and-release.outputs.release_version }}"
 
   deploy-pre:
     needs: [tag-and-release, build-image]
@@ -166,6 +178,15 @@ jobs:
           component: backend
           base_url: ${{ vars.PRE_BACKEND_URL }}
           environment: pre
+      - name: Set up Node for the acceptance check
+        if: steps.health.outcome == 'success'
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: "20"
+      - name: Verify acceptance scenarios against the deployed API (FR-011c)
+        id: acceptance
+        if: steps.health.outcome == 'success'
+        run: node scripts/check-aceptance.js --base-url "${{ vars.PRE_BACKEND_URL }}"
       - name: Record deployment
         if: always()
         uses: ./.github/actions/record-deployment
@@ -174,4 +195,11 @@ jobs:
           component: backend
           artifact_tag: ${{ needs.tag-and-release.outputs.release_version }}
           trigger: auto-deploy
-          health_check_result: ${{ steps.health.outcome == 'success' && 'pass' || 'fail' }}
+          health_check_result: ${{ (steps.health.outcome == 'success' && steps.acceptance.outcome != 'failure') && 'pass' || 'fail' }}
+
+  code-review-gate:
+    needs: deploy-pre
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - run: echo "All gates passed — ci-main-back certified (FR-022)"

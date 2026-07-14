@@ -28,7 +28,14 @@ frontend: React 18 + Vite), per `.specify/memory/constitution.md`.
 `docker/login-action`, `docker/build-push-action`, `docker/metadata-action` (all
 pinned by SHA per pipeline-constitution Principle I); GHCR as the image registry;
 GitHub Releases API for release-asset publishing; Constitution Guardian agent API
-(external, called from `pr-validation-*` — contract defined in `contracts/`).
+(external, called from `pr-validation-*` — contract defined in `contracts/`);
+Spectral (OpenAPI contract lint) and oasdiff (breaking-change detection), both in
+`pr-validation-back`; Gitleaks (secret scanning), in `pr-validation-back` and
+`pr-validation-front`; Trivy (container image vulnerability scan), in
+`ci-develop-*`/`ci-main-*` between `build-image` and `push-image`; a custom
+`check-aceptance.js` Node script (verifies spec.md's acceptance scenarios against
+the real deployed backend API), run post-health-check in `ci-develop-back` and
+`ci-main-back`.
 
 **Storage**: N/A for the pipeline itself. Snapshot dist artifacts → GitHub Actions
 workflow artifacts (90-day retention). Final-version dist artifacts → permanent
@@ -72,7 +79,7 @@ This feature is governed by **two** constitutions:
 
 | Principle | Check | Status |
 |---|---|---|
-| Pipeline I — Pin por SHA | All `uses:` in the 6 workflows pinned by full commit SHA | Planned (task-level, Phase 2) |
+| Pipeline I — Pin por SHA | All `uses:` in the 6 workflows pinned by full commit SHA, including the new Spectral/oasdiff/Gitleaks/Trivy actions | Planned (task-level, Phase 2) |
 | Pipeline II — Permisos Mínimos | Each job declares its own minimal `permissions:`; `packages: write` only on publish jobs | Planned |
 | Pipeline III — No Rebuild en CD | `prod` promotion redeploys the exact `pre` image by digest/tag, no rebuild | Planned (FR-012/015) |
 | Pipeline IV — Spec Antes que YAML | spec.md + this plan committed before any `.github/workflows/*.yml` | Satisfied by process (this plan precedes implementation) |
@@ -115,11 +122,19 @@ specs/004-ci-cd-pipeline/
     ├── ci-main-back.yml
     └── ci-main-front.yml
 
+contracts/
+└── openapi.yaml           # EXISTING (per FieldOps constitution Principle II) — linted by Spectral, diffed by oasdiff; pr-validation-back additionally triggers on contracts/** (FR-000b)
+
 backend/
 ├── Dockerfile            # NEW — does not exist yet, required for GHCR publish
 ├── VERSION               # NEW — holds the develop in-progress semver (per FR-010b)
 ├── src/
 └── ...
+
+scripts/
+├── bump-version.sh       # EXISTING
+├── deploy.sh             # EXISTING
+└── check-aceptance.js    # NEW — verifies spec.md acceptance scenarios against the deployed backend API (FR-008b/FR-011c)
 
 frontend/
 ├── Dockerfile            # NEW — does not exist yet, required for GHCR publish
