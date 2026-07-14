@@ -38,4 +38,3 @@ if (require.main === module) {
 }
 
 module.exports = app;
-// trigger pr-validation-back for constitution-guardian cursor-agent smoke test
