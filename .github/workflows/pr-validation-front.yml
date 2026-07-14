@@ -5,13 +5,51 @@ on:
     types: [opened, synchronize, reopened]
     branches: [develop]
     paths: ["frontend/**"]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "PR number to re-run validation for (manual run)"
+        required: true
+        type: string
 
 concurrency:
-  group: pr-validation-front-${{ github.event.pull_request.number }}
+  group: pr-validation-front-${{ github.event.pull_request.number || inputs.pr_number }}
   cancel-in-progress: true
 
 jobs:
+  # Resolves PR number/head_sha/base_sha uniformly for both the automatic
+  # pull_request trigger and a manual workflow_dispatch re-run, so every
+  # downstream job/step can use needs.context.outputs.* instead of
+  # github.event.pull_request.* (which is empty on manual runs).
+  context:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      pr_number: ${{ steps.resolve.outputs.pr_number }}
+      head_sha: ${{ steps.resolve.outputs.head_sha }}
+      base_sha: ${{ steps.resolve.outputs.base_sha }}
+    steps:
+      - id: resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            PR_NUMBER="${{ inputs.pr_number }}"
+            DATA=$(gh api "repos/${{ github.repository }}/pulls/$PR_NUMBER")
+            echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+            echo "head_sha=$(echo "$DATA" | jq -r .head.sha)" >> "$GITHUB_OUTPUT"
+            echo "base_sha=$(echo "$DATA" | jq -r .base.sha)" >> "$GITHUB_OUTPUT"
+          else
+            echo "pr_number=${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+            echo "head_sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+            echo "base_sha=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_OUTPUT"
+          fi
+
   lint:
+    needs: context
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -20,6 +58,8 @@ jobs:
         working-directory: frontend
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ needs.context.outputs.head_sha }}
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: "20"
@@ -29,6 +69,7 @@ jobs:
       - run: npm run lint
 
   test:
+    needs: context
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -37,6 +78,8 @@ jobs:
         working-directory: frontend
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ needs.context.outputs.head_sha }}
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: "20"
@@ -46,7 +89,7 @@ jobs:
       - run: npm test
 
   build:
-    needs: [lint, test]
+    needs: [context, lint, test]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -55,6 +98,8 @@ jobs:
         working-directory: frontend
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ needs.context.outputs.head_sha }}
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: "20"
@@ -64,12 +109,14 @@ jobs:
       - run: npm run build
 
   gitleaks:
+    needs: context
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
+          ref: ${{ needs.context.outputs.head_sha }}
           fetch-depth: 0
       - name: "Install gitleaks (checksum-pinned CLI — gitleaks-action requires a paid GITLEAKS_LICENSE secret for orgs, which pipeline-constitution Principle VI forbids)"
         run: |
@@ -79,20 +126,22 @@ jobs:
           tar -xzf gitleaks.tar.gz gitleaks
           sudo mv gitleaks /usr/local/bin/gitleaks
       - name: Scan the PR's diff for committed secrets (FR-006b)
-        run: gitleaks git --source . --log-opts="${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}" --no-banner
+        run: gitleaks git --source . --log-opts="${{ needs.context.outputs.base_sha }}..${{ needs.context.outputs.head_sha }}" --no-banner
 
   constitution-guardian:
-    needs: [build, gitleaks]
+    needs: [context, build, gitleaks]
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ needs.context.outputs.head_sha }}
       - uses: ./.github/actions/constitution-guardian
         with:
           component: frontend
-          pull_request_number: ${{ github.event.pull_request.number }}
-          head_sha: ${{ github.event.pull_request.head.sha }}
+          pull_request_number: ${{ needs.context.outputs.pr_number }}
+          head_sha: ${{ needs.context.outputs.head_sha }}
 
   code-review-gate:
     needs: constitution-guardian
