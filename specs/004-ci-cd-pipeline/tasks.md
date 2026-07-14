@@ -28,10 +28,10 @@ Monorepo web app: `.github/workflows/`, `backend/`, `frontend/`, `scripts/` (ver
 
 **Purpose**: Scaffolding compartido antes de crear ningún workflow.
 
-- [ ] T001 Crear directorio `.github/workflows/` (vacío, listo para los 6 archivos)
-- [ ] T002 [P] Verificar que `contracts/openapi.yaml`, `backend/VERSION`, `frontend/VERSION`, `scripts/bump-version.sh` existen y son válidos (prerrequisito de FR-006/FR-009)
-- [ ] T003 [P] Crear `backend/scripts/check-acceptance.js` (stub ejecutable que valida ACs del spec de negocio contra la API; gate de `pr-validation-back.yml` por contrato de `contracts/gates.md`)
-- [ ] T003a [P] Crear `scripts/release-tag.sh <back|front>` (wrapper: invoca `scripts/bump-version.sh`, luego `git tag -a <back|front>-vX.Y.Z` + `git push origin <tag>` — corrige hallazgo C1/C2 de `/speckit-analyze`: `bump-version.sh` por sí solo no toca git)
+- [X] T001 Crear directorio `.github/workflows/` (vacío, listo para los 6 archivos)
+- [X] T002 [P] Verificar que `contracts/openapi.yaml`, `backend/VERSION`, `frontend/VERSION`, `scripts/bump-version.sh` existen y son válidos (prerrequisito de FR-006/FR-009)
+- [X] T003 [P] Crear `backend/scripts/check-acceptance.js` (stub ejecutable que valida ACs del spec de negocio contra la API; gate de `pr-validation-back.yml` por contrato de `contracts/gates.md`)
+- [X] T003a [P] Crear `scripts/release-tag.sh <back|front>` (wrapper: invoca `scripts/bump-version.sh`, luego `git tag -a <back|front>-vX.Y.Z` + `git push origin <tag>` — corrige hallazgo C1/C2 de `/speckit-analyze`: `bump-version.sh` por sí solo no toca git)
 
 **Checkpoint**: Estructura lista, nada bloqueante creado aún.
 
@@ -43,9 +43,9 @@ Monorepo web app: `.github/workflows/`, `backend/`, `frontend/`, `scripts/` (ver
 
 **⚠️ CRITICAL**: Ningún workflow de Fase 3+ puede referenciar estos sin que existan primero.
 
-- [ ] T004 [P] Crear composite action `.github/actions/constitution-guardian/action.yml` (invoca `CONSTITUTION_GUARDIAN_API_URL`, fail-closed ante timeout/error — usado por `pr-validation-back` y `pr-validation-front`)
-- [ ] T005 [P] Documentar en `docs/ci-cd-environment-setup.md` (ya existe) que `CONSTITUTION_GUARDIAN_API_URL` es prerrequisito de T004 — solo actualizar si el contrato de la action cambia
-- [ ] T006 Fijar por SHA completo las Actions externas de terceros a usar (`actions/checkout`, `actions/upload-artifact`, `docker/build-push-action`, `docker/login-action`, gitleaks-action, trivy-action, spectral-action, `softprops/action-gh-release`) en un bloque de referencia versionado en `research.md` (Principio I) para reutilizar el mismo SHA en los 6 workflows
+- [X] T004 [P] Crear composite action `.github/actions/constitution-guardian/action.yml` (invoca `anthropics/claude-code-action` con `secrets.ANTHROPIC_API_KEY`, fail-closed por defecto sin `continue-on-error` + `timeout-minutes` en el job llamante — usado por `pr-validation-back` y `pr-validation-front`)
+- [X] T005 [P] Actualizar `docs/ci-cd-environment-setup.md`: `CONSTITUTION_GUARDIAN_API_URL` reemplazado por el secret `ANTHROPIC_API_KEY` (la action real usada, `anthropics/claude-code-action`, llama a la API de Anthropic directamente, no a un servicio guardián propio)
+- [X] T006 Fijar por SHA completo las Actions externas de terceros a usar (`actions/checkout`, `actions/setup-node`, `actions/upload-artifact`, `actions/download-artifact`, `docker/setup-buildx-action`, `docker/build-push-action`, `docker/login-action`, `gitleaks/gitleaks-action`, `aquasecurity/trivy-action`, `stoplightio/spectral-action`, `oasdiff/oasdiff-action`, `softprops/action-gh-release`, `anthropics/claude-code-action`) resueltos vía GitHub API y reutilizados literalmente en los 6 workflows + composite action
 
 **Checkpoint**: Composite actions y SHAs fijados — los 3 pares de workflows pueden implementarse en paralelo.
 
@@ -59,21 +59,21 @@ Monorepo web app: `.github/workflows/`, `backend/`, `frontend/`, `scripts/` (ver
 
 ### Implementation for User Story 1
 
-- [ ] T007 [P] [US1] Crear `.github/workflows/pr-validation-back.yml`: trigger `pull_request` → `develop`, `paths: ["backend/**"]`, permisos mínimos (`contents: read`)
-- [ ] T008 [US1] Job `lint-test` en `pr-validation-back.yml` (`npm test` vía `package.json` de `backend/`) (depende de T007)
-- [ ] T009 [P] [US1] Job `spectral` en `pr-validation-back.yml` sobre `contracts/openapi.yaml` (depende de T008, `needs: lint-test`)
-- [ ] T010 [P] [US1] Job `oasdiff` en `pr-validation-back.yml` (base `develop` vs PR) (depende de T008)
-- [ ] T011 [P] [US1] Job `gitleaks` en `pr-validation-back.yml` (depende de T008)
-- [ ] T012 [P] [US1] Job `check-acceptance` en `pr-validation-back.yml` ejecutando `backend/scripts/check-acceptance.js` (depende de T003, T008)
-- [ ] T013 [P] [US1] Job `trivy` en `pr-validation-back.yml`: `docker build --load` de `backend/Dockerfile` + scan (depende de T008)
-- [ ] T014 [P] [US1] Job `constitution-guardian` en `pr-validation-back.yml` usando la action de T004 (depende de T004, T008)
-- [ ] T015 [US1] Job `code-review` (dummy) en `pr-validation-back.yml` con `needs:` de T009–T014, certifica el paso
-- [ ] T016 [P] [US1] Crear `.github/workflows/pr-validation-front.yml`: trigger `pull_request` → `develop`, `paths: ["frontend/**"]`, permisos mínimos
-- [ ] T017 [US1] Job `lint-test` en `pr-validation-front.yml` (depende de T016)
-- [ ] T018 [P] [US1] Job `gitleaks` en `pr-validation-front.yml` (depende de T017)
-- [ ] T019 [P] [US1] Job `constitution-guardian` en `pr-validation-front.yml` usando la action de T004 (depende de T004, T017)
-- [ ] T020 [US1] Job `code-review` (dummy) en `pr-validation-front.yml` con `needs:` de T018, T019
-- [ ] T021 [US1] Configurar branch protection de `develop` requiriendo `pr-validation-back`/`pr-validation-front` (seguir `docs/ci-cd-branch-protection.md`, paso manual — registrar hecho, no archivo)
+- [X] T007 [P] [US1] Crear `.github/workflows/pr-validation-back.yml`: trigger `pull_request` → `develop`, `paths: ["backend/**"]`, permisos mínimos (`contents: read`)
+- [X] T008 [US1] Job `lint-test` en `pr-validation-back.yml` (`npm test` vía `package.json` de `backend/`) (depende de T007)
+- [X] T009 [P] [US1] Job `spectral` en `pr-validation-back.yml` sobre `contracts/openapi.yaml` (depende de T008, `needs: lint-test`)
+- [X] T010 [P] [US1] Job `oasdiff` en `pr-validation-back.yml` (base `develop` vs PR) (depende de T008)
+- [X] T011 [P] [US1] Job `gitleaks` en `pr-validation-back.yml` (depende de T008)
+- [X] T012 [P] [US1] Job `check-acceptance` en `pr-validation-back.yml` ejecutando `backend/scripts/check-acceptance.js` (depende de T003, T008) — usa `services: postgres` efímero (decisión explícita del autor, más fiel a producción que el cliente SQLite de test)
+- [X] T013 [P] [US1] Job `trivy` en `pr-validation-back.yml`: `docker build --load` de `backend/Dockerfile` + scan (depende de T008)
+- [X] T014 [P] [US1] Job `constitution-guardian` en `pr-validation-back.yml` usando la action de T004 (depende de T004, T008)
+- [X] T015 [US1] Job `code-review` (dummy) en `pr-validation-back.yml` con `needs:` de T009–T014, certifica el paso
+- [X] T016 [P] [US1] Crear `.github/workflows/pr-validation-front.yml`: trigger `pull_request` → `develop`, `paths: ["frontend/**"]`, permisos mínimos
+- [X] T017 [US1] Job `lint-test` en `pr-validation-front.yml` (depende de T016)
+- [X] T018 [P] [US1] Job `gitleaks` en `pr-validation-front.yml` (depende de T017)
+- [X] T019 [P] [US1] Job `constitution-guardian` en `pr-validation-front.yml` usando la action de T004 (depende de T004, T017)
+- [X] T020 [US1] Job `code-review` (dummy) en `pr-validation-front.yml` con `needs:` de T018, T019
+- [ ] T021 [US1] Configurar branch protection de `develop` requiriendo `pr-validation-back`/`pr-validation-front` (seguir `docs/ci-cd-branch-protection.md`, paso manual en GitHub Settings — pendiente, requiere acceso al repo remoto real; no ejecutable desde este entorno)
 
 **Checkpoint**: User Story 1 completa — PRs quedan validados y bloqueados de forma independiente por componente.
 
@@ -87,16 +87,16 @@ Monorepo web app: `.github/workflows/`, `backend/`, `frontend/`, `scripts/` (ver
 
 ### Implementation for User Story 2
 
-- [ ] T022 [P] [US2] Crear `.github/workflows/ci-develop-back.yml`: trigger `push` → `develop`, `paths: ["backend/**"]`, permisos (`contents: read`, `packages: write` solo en job de push)
-- [ ] T023 [US2] Job `ci` (lint+test+build) en `ci-develop-back.yml` (depende de T022)
-- [ ] T024 [US2] Job `version` que calcula `x.y.z-snapshot.{short-sha}` desde `backend/VERSION` (FR-006) (depende de T023)
-- [ ] T025 [P] [US2] Job `docker-build-push` en `ci-develop-back.yml`: build + push a `ghcr.io/<org>/<repo>/fieldops-back:<tag>` con `GITHUB_TOKEN` (depende de T024)
-- [ ] T026 [P] [US2] Job `upload-dist` en `ci-develop-back.yml`: `actions/upload-artifact` del build compilado, retención 90 días (depende de T023)
-- [ ] T027 [P] [US2] Crear `.github/workflows/ci-develop-front.yml`: trigger `push` → `develop`, `paths: ["frontend/**"]`, mismos permisos que T022
-- [ ] T028 [US2] Job `ci` (lint+test+build) en `ci-develop-front.yml` (depende de T027)
-- [ ] T029 [US2] Job `version` (snapshot desde `frontend/VERSION`) en `ci-develop-front.yml` (depende de T028)
-- [ ] T030 [P] [US2] Job `docker-build-push` en `ci-develop-front.yml` (depende de T029)
-- [ ] T031 [P] [US2] Job `upload-dist` en `ci-develop-front.yml` (depende de T028)
+- [X] T022 [P] [US2] Crear `.github/workflows/ci-develop-back.yml`: trigger `push` → `develop`, `paths: ["backend/**"]`, permisos (`contents: read`, `packages: write` solo en job de push)
+- [X] T023 [US2] Job `ci` (lint+test+build) en `ci-develop-back.yml` (depende de T022) — versión y upload-dist se resolvieron como steps del mismo job `ci` (no jobs separados) para poder reusar el checkout/build sin re-descargar artefactos intermedios
+- [X] T024 [US2] Job `version` que calcula `x.y.z-snapshot.{short-sha}` desde `backend/VERSION` (FR-006) (depende de T023) — implementado como step `version` dentro de `ci`, expuesto vía `outputs.version`
+- [X] T025 [P] [US2] Job `docker-build-push` en `ci-develop-back.yml`: build + push a `ghcr.io/<org>/<repo>/fieldops-back:<tag>` con `GITHUB_TOKEN` (depende de T024)
+- [X] T026 [P] [US2] Job `upload-dist` en `ci-develop-back.yml`: `actions/upload-artifact` del build compilado, retención 90 días (depende de T023) — step dentro de `ci`
+- [X] T027 [P] [US2] Crear `.github/workflows/ci-develop-front.yml`: trigger `push` → `develop`, `paths: ["frontend/**"]`, mismos permisos que T022
+- [X] T028 [US2] Job `ci` (lint+test+build) en `ci-develop-front.yml` (depende de T027)
+- [X] T029 [US2] Job `version` (snapshot desde `frontend/VERSION`) en `ci-develop-front.yml` (depende de T028)
+- [X] T030 [P] [US2] Job `docker-build-push` en `ci-develop-front.yml` (depende de T029)
+- [X] T031 [P] [US2] Job `upload-dist` en `ci-develop-front.yml` (depende de T028)
 
 **Checkpoint**: User Stories 1 y 2 funcionan de forma independiente — snapshot verificable en GHCR tras cada merge a develop.
 
@@ -110,16 +110,16 @@ Monorepo web app: `.github/workflows/`, `backend/`, `frontend/`, `scripts/` (ver
 
 ### Implementation for User Story 3
 
-- [ ] T032 [P] [US3] Crear `.github/workflows/ci-main-back.yml`: trigger `push` de tag `back-v*.*.*` (NO push genérico de rama `main` — el tag es prerrequisito, creado por T003a antes del merge), permisos (`contents: write` para Release, `packages: write` solo en job de push)
-- [ ] T033 [US3] Job `ci` (lint+test+build) en `ci-main-back.yml` (depende de T032)
-- [ ] T034 [US3] Job `version` que extrae `X.Y.Z` del nombre del tag `back-vX.Y.Z` que disparó el workflow (FR-009) (depende de T033)
-- [ ] T035 [P] [US3] Job `docker-build-push` en `ci-main-back.yml`: build + push `ghcr.io/<org>/<repo>/fieldops-back:x.y.z` (depende de T034)
-- [ ] T036 [P] [US3] Job `gh-release` en `ci-main-back.yml`: `softprops/action-gh-release` con dist comprimido como asset (depende de T033)
-- [ ] T037 [P] [US3] Crear `.github/workflows/ci-main-front.yml`: trigger `push` de tag `front-v*.*.*`, mismos permisos que T032
-- [ ] T038 [US3] Job `ci` (lint+test+build) en `ci-main-front.yml` (depende de T037)
-- [ ] T039 [US3] Job `version` que extrae `X.Y.Z` del nombre del tag `front-vX.Y.Z` (depende de T038)
-- [ ] T040 [P] [US3] Job `docker-build-push` en `ci-main-front.yml` (depende de T039)
-- [ ] T041 [P] [US3] Job `gh-release` en `ci-main-front.yml` (depende de T038)
+- [X] T032 [P] [US3] Crear `.github/workflows/ci-main-back.yml`: trigger `push` de tag `back-v*.*.*` (NO push genérico de rama `main` — el tag es prerrequisito, creado por T003a antes del merge), permisos (`contents: write` para Release, `packages: write` solo en job de push)
+- [X] T033 [US3] Job `ci` (lint+test+build) en `ci-main-back.yml` (depende de T032)
+- [X] T034 [US3] Job `version` que extrae `X.Y.Z` del nombre del tag `back-vX.Y.Z` que disparó el workflow (FR-009) (depende de T033) — step dentro de `ci`
+- [X] T035 [P] [US3] Job `docker-build-push` en `ci-main-back.yml`: build + push `ghcr.io/<org>/<repo>/fieldops-back:x.y.z` (depende de T034)
+- [X] T036 [P] [US3] Job `gh-release` en `ci-main-back.yml`: `softprops/action-gh-release` con dist comprimido como asset (depende de T033) — descarga el artifact subido por `ci` en vez de reconstruir (evita duplicar build)
+- [X] T037 [P] [US3] Crear `.github/workflows/ci-main-front.yml`: trigger `push` de tag `front-v*.*.*`, mismos permisos que T032
+- [X] T038 [US3] Job `ci` (lint+test+build) en `ci-main-front.yml` (depende de T037)
+- [X] T039 [US3] Job `version` que extrae `X.Y.Z` del nombre del tag `front-vX.Y.Z` (depende de T038)
+- [X] T040 [P] [US3] Job `docker-build-push` en `ci-main-front.yml` (depende de T039)
+- [X] T041 [P] [US3] Job `gh-release` en `ci-main-front.yml` (depende de T038)
 
 **Checkpoint**: Los 6 workflows de la Capa 1 mínima están completos e independientemente funcionales.
 
@@ -129,11 +129,11 @@ Monorepo web app: `.github/workflows/`, `backend/`, `frontend/`, `scripts/` (ver
 
 **Purpose**: Verificación transversal de las reglas no negociables y cierre de Capa 1.
 
-- [ ] T042 [P] Verificar que todo `uses:` en los 6 workflows está fijado por SHA completo (Principio I) — revisión estática
-- [ ] T043 [P] Verificar `permissions:` mínimos declarados por job en los 6 workflows (Principio II)
-- [ ] T044 Actualizar `README.md` con branching strategy, cómo abrir PR de prueba, cómo verificar snapshot en GHCR (Fase 7 roadmap)
-- [ ] T045 Ejecutar `quickstart.md` end-to-end (PR de prueba → merge develop → merge main) y registrar resultado
-- [ ] T046 Confirmar vía `git log` que `spec.md`/`plan.md`/`pipeline-constitution.md` preceden al primer commit de `.github/workflows/*.yml` (Principio IV, verificable)
+- [X] T042 [P] Verificar que todo `uses:` en los 6 workflows está fijado por SHA completo (Principio I) — revisión estática (`grep -rn "uses:" .github/workflows/*.yml .github/actions/*/action.yml`, 0 referencias sin SHA de 40 hex fuera de la action local `./.github/actions/...`)
+- [X] T043 [P] Verificar `permissions:` mínimos declarados por job en los 6 workflows (Principio II) — confirmado, `packages: write` limitado a los 4 jobs `push-image`
+- [X] T044 Actualizar `README.md` con branching strategy, cómo abrir PR de prueba, cómo verificar snapshot en GHCR (Fase 7 roadmap) — también se corrigió contenido obsoleto heredado (referenciaba `promote-prod`/`rollback`, workflows nunca construidos)
+- [ ] T045 Ejecutar `quickstart.md` end-to-end (PR de prueba → merge develop → merge main) y registrar resultado — pendiente: requiere un repo GitHub real con Actions habilitado; no ejecutable desde este entorno local
+- [X] T046 Confirmar vía `git log` que `spec.md`/`plan.md`/`pipeline-constitution.md` preceden al primer commit de `.github/workflows/*.yml` (Principio IV, verificable) — confirmado: spec.md commit 531194e (y anteriores) preceden al commit que introduce `.github/workflows/`
 
 **Capa 2 (opcional, no bloqueante — solo si se aborda tras cerrar Capa 1)**:
 

@@ -25,15 +25,28 @@ dev/pre/prod) and non-blocking for the mandatory Capa 1 scope.
 - A test `workflow_dispatch` run targeting `environment: prod` pauses for
   approval before running deploy steps (confirms the gate is live).
 
-## Required repo variables (Settings → Secrets and variables → Actions → Variables)
+## Required repo secret (needed NOW, Capa 1 — not optional)
 
-For the health-check step (Principle IX) and the Constitution Guardian call
-(guardián de Constitución, FR-001/FR-002) to know where to probe/call — exact
-action/step names are defined in `plan.md` once Fase 4 completes:
+`.github/actions/constitution-guardian` calls `anthropics/claude-code-action`
+directly (guardián de Constitución, FR-001/FR-002), which needs an Anthropic
+API key:
+
+| Secret | Used by |
+|---|---|
+| `ANTHROPIC_API_KEY` | `pr-validation-back`, `pr-validation-front` (via `constitution-guardian` composite action) |
+
+This is a secret (not a plain variable) — it's a credential, unlike the
+table below. It does **not** violate pipeline-constitution.md Principle VI
+(no extra secrets for **GHCR**); that principle is scoped to registry auth,
+which stays on `GITHUB_TOKEN`.
+
+## Required repo variables (Settings → Secrets and variables → Actions → Variables) — Capa 2 only
+
+For the health-check step (Principle IX), if/when Capa 2 (CD a dev/pre/prod)
+is implemented:
 
 | Variable | Example value | Used by |
 |---|---|---|
-| `CONSTITUTION_GUARDIAN_API_URL` | `https://guardian.internal/api/check` | `pr-validation-{back,front}` |
 | `DEV_BACKEND_URL` | `https://dev-api.fieldops.example` | `ci-develop-back` |
 | `DEV_FRONTEND_URL` | `https://dev.fieldops.example` | `ci-develop-front` |
 | `PRE_BACKEND_URL` | `https://pre-api.fieldops.example` | `ci-main-back` |

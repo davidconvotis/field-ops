@@ -1,0 +1,87 @@
+name: CI Main — Frontend
+
+# Trigger: push de tag front-vX.Y.Z (creado por scripts/release-tag.sh front
+# ANTES del merge a main — no un push genérico de rama, ver spec.md FR-009 /
+# analyze findings C1/C2). CI completo + imagen semver final a GHCR +
+# GitHub Release con dist como asset permanente.
+
+on:
+  push:
+    tags:
+      - "front-v*.*.*"
+
+env:
+  IMAGE: ghcr.io/${{ github.repository }}/fieldops-front
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: frontend
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - name: Extract version from tag
+        id: version
+        run: |
+          TAG="${GITHUB_REF_NAME}"       # front-vX.Y.Z
+          echo "version=${TAG#front-v}" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: dist-frontend-${{ steps.version.outputs.version }}
+          path: frontend/dist
+          retention-days: 1 # solo puente hacia el job gh-release; el asset permanente vive en el Release
+
+  push-image:
+    needs: ci
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: frontend
+          push: true
+          tags: ${{ env.IMAGE }}:${{ needs.ci.outputs.version }}
+
+  gh-release:
+    needs: ci
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: dist-frontend-${{ needs.ci.outputs.version }}
+          path: dist
+      - name: Compress dist (same build as ci job — no rebuild)
+        run: tar -czf dist-frontend-${{ needs.ci.outputs.version }}.tar.gz -C dist .
+      - uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "Frontend ${{ needs.ci.outputs.version }}"
+          files: dist-frontend-${{ needs.ci.outputs.version }}.tar.gz
