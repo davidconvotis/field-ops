@@ -1,0 +1,19 @@
+# Render Blueprint — backend service only.
+# Deploy independently with the Render CLI from repo root:
+#   render blueprint launch -f backend/render.yaml
+#   render deploy -f backend/render.yaml
+services:
+  - type: web
+    name: fieldops-backend
+    runtime: node
+    plan: starter
+    buildCommand: ./scripts/render-build-backend.sh
+    startCommand: node backend/dist/src/api/app.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3000"
+      # Set the rest (DATABASE_URL, JWT secrets, etc.) as secrets in the
+      # Render dashboard for this service — not committed here.

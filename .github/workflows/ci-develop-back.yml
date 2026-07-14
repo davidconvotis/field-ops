@@ -69,3 +69,36 @@ jobs:
           context: backend
           push: true
           tags: ${{ env.IMAGE }}:${{ needs.ci.outputs.version }}
+
+  deploy:
+    needs: [ci, push-image]
+    runs-on: ubuntu-latest
+    concurrency:
+      group: dev-backend
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: Deploy snapshot image to dev
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ vars.DEV_BACKEND_RENDER_SERVICE_ID }}
+        run: ./scripts/deploy.sh dev backend "${{ needs.ci.outputs.version }}"
+      - name: Health check dev
+        id: health
+        uses: ./.github/actions/health-check
+        with:
+          component: backend
+          base_url: ${{ vars.DEV_BACKEND_URL }}
+          environment: dev
+      - name: Record deployment
+        if: always()
+        uses: ./.github/actions/record-deployment
+        with:
+          environment: dev
+          component: backend
+          artifact_tag: ${{ needs.ci.outputs.version }}
+          trigger: auto-deploy
+          health_check_result: ${{ steps.health.outcome == 'success' && 'pass' || 'fail' }}

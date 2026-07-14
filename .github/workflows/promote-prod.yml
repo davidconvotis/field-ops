@@ -84,7 +84,14 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Deploy the exact pre-validated image to prod (no rebuild)
-        run: ./scripts/deploy.sh prod "${{ inputs.component }}" "${{ inputs.image_tag }}"
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          PROD_BACKEND_RENDER_SERVICE_ID: ${{ vars.PROD_BACKEND_RENDER_SERVICE_ID }}
+          PROD_FRONTEND_RENDER_SERVICE_ID: ${{ vars.PROD_FRONTEND_RENDER_SERVICE_ID }}
+        run: |
+          KEY="$(echo "prod_${{ inputs.component }}_RENDER_SERVICE_ID" | tr '[:lower:]' '[:upper:]')"
+          export RENDER_SERVICE_ID="${!KEY}"
+          ./scripts/deploy.sh prod "${{ inputs.component }}" "${{ inputs.image_tag }}"
       - name: Health check prod
         id: health
         uses: ./.github/actions/health-check

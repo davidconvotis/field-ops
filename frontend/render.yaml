@@ -1,0 +1,14 @@
+# Render Blueprint — frontend service only.
+# Deploy independently with the Render CLI from repo root:
+#   render blueprint launch -f frontend/render.yaml
+#   render deploy -f frontend/render.yaml
+services:
+  - type: web
+    name: fieldops-frontend
+    runtime: static
+    buildCommand: ./scripts/render-build-frontend.sh
+    staticPublishPath: frontend/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
