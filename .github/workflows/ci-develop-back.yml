@@ -33,6 +33,8 @@ jobs:
           cache: npm
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
+      - name: Regenerate Prisma clients for this runner (committed client is darwin-arm64)
+        run: npm run prisma:generate
       - run: npm run lint
       - run: npm test
       - run: npm run build
