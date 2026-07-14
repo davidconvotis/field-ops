@@ -33,7 +33,5 @@ runs:
           NON-NEGOTIABLE o "DEBE", finaliza tu respuesta con la exit code
           distinta de cero explicando el principio violado. Si no hay
           violaciones, finaliza con éxito.
-        claude_args: |
-          --max-turns 5
       # Sin continue-on-error: cualquier fallo del step (API caída, timeout,
       # violación detectada) falla este job — fail-closed por defecto.

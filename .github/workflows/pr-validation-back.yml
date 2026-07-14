@@ -56,7 +56,9 @@ jobs:
         with:
           fetch-depth: 0
       - name: Checkout base contract (develop)
-        run: git show origin/develop:contracts/openapi.yaml > /tmp/base-openapi.yaml
+        run: |
+          git fetch origin develop --depth=1
+          git show origin/develop:contracts/openapi.yaml > /tmp/base-openapi.yaml
       - uses: oasdiff/oasdiff-action/breaking@024f6c399f9a21ada1addb0f9a36ce1bfac995f1 # v0.1.6
         with:
           base: /tmp/base-openapi.yaml
@@ -68,6 +70,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      pull-requests: read # gitleaks-action's PR scan mode calls GET /pulls/:number/commits
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
@@ -100,7 +103,6 @@ jobs:
         working-directory: backend
     env:
       DATABASE_URL: postgresql://fieldops:fieldops@localhost:5432/fieldops
-      NODE_ENV: production
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
@@ -108,11 +110,13 @@ jobs:
           node-version: "20"
           cache: npm
           cache-dependency-path: backend/package-lock.json
-      - run: npm ci
+      - run: npm ci # NODE_ENV must NOT be production here — ts-node (seed) is a devDependency
       - run: npm run prisma:generate
       - run: npm run prisma:migrate
       - run: npm run seed
       - name: Start API in background
+        env:
+          NODE_ENV: production
         run: npm run build && node dist/src/api/app.js &
       - name: Wait for API
         run: npx wait-on http://localhost:3000/health -t 30000
