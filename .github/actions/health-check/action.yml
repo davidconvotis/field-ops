@@ -1,0 +1,56 @@
+name: "Health Check"
+description: >
+  Probes a deployed environment and fails the step on non-2xx or timeout
+  (spec.md FR-018/FR-019, research.md §6). Backend probes `/health` and
+  expects {"status":"ok"}; frontend probes `/` and expects HTTP 200. On
+  failure, emits a "flagged for rollback" annotation (FR-019) instead of
+  just failing silently.
+
+inputs:
+  component:
+    description: "backend | frontend"
+    required: true
+  base_url:
+    description: "Base URL of the deployed environment to probe"
+    required: true
+  environment:
+    description: "dev | pre | prod — used only for the failure annotation message"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Probe health endpoint
+      id: probe
+      shell: bash
+      run: |
+        set -euo pipefail
+        if [ "${{ inputs.component }}" = "backend" ]; then
+          URL="${{ inputs.base_url }}/health"
+        else
+          URL="${{ inputs.base_url }}/"
+        fi
+
+        HTTP_CODE=$(curl -s -o /tmp/health-body.json -w '%{http_code}' --max-time 10 "$URL" || echo "000")
+
+        if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+          echo "flagged=true" >> "$GITHUB_OUTPUT"
+          echo "::error::Health check FAILED for ${{ inputs.component }} in ${{ inputs.environment }} (HTTP $HTTP_CODE) — flagged for rollback (FR-019)"
+          exit 1
+        fi
+
+        if [ "${{ inputs.component }}" = "backend" ]; then
+          if ! grep -q '"status"\s*:\s*"ok"' /tmp/health-body.json; then
+            echo "flagged=true" >> "$GITHUB_OUTPUT"
+            echo "::error::Health check FAILED for backend in ${{ inputs.environment }} — unexpected body — flagged for rollback (FR-019)"
+            exit 1
+          fi
+        fi
+
+        echo "flagged=false" >> "$GITHUB_OUTPUT"
+        echo "Health check passed for ${{ inputs.component }} in ${{ inputs.environment }}"
+
+outputs:
+  flagged_for_rollback:
+    description: "true if the health check failed and the deployment should be rolled back"
+    value: ${{ steps.probe.outputs.flagged }}

@@ -1,0 +1,14 @@
+name: "GHCR Login"
+description: >
+  Logs into GHCR using only the platform-injected GITHUB_TOKEN — no extra
+  secret (pipeline-constitution.md Principle VI, spec.md NFR-005).
+
+runs:
+  using: "composite"
+  steps:
+    - name: Log in to GHCR
+      uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ github.token }}

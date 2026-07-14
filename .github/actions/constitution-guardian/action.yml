@@ -1,0 +1,62 @@
+name: "Constitution Guardian Check"
+description: >
+  Calls the Constitution Guardian agent API (contracts/constitution-guardian-api.md).
+  Fail-closed (research.md §2): any timeout, non-2xx, or malformed/missing
+  `verdict` field is treated as `fail` — never as an implicit pass.
+
+inputs:
+  component:
+    description: "backend | frontend"
+    required: true
+  pull_request_number:
+    description: "PR number being validated"
+    required: true
+  head_sha:
+    description: "Commit SHA being validated"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Call Constitution Guardian API (fail-closed)
+      shell: bash
+      env:
+        GUARDIAN_API_URL: ${{ vars.CONSTITUTION_GUARDIAN_API_URL }}
+      run: |
+        set -uo pipefail
+
+        if [ -z "${GUARDIAN_API_URL:-}" ]; then
+          echo "::error::CONSTITUTION_GUARDIAN_API_URL repo variable not set — failing closed"
+          exit 1
+        fi
+
+        PAYLOAD=$(cat <<JSON
+        {
+          "repository": "${{ github.repository }}",
+          "pull_request_number": ${{ inputs.pull_request_number }},
+          "component": "${{ inputs.component }}",
+          "head_sha": "${{ inputs.head_sha }}"
+        }
+        JSON
+        )
+
+        HTTP_CODE=$(curl -s -o /tmp/guardian-response.json -w '%{http_code}' \
+          --max-time 30 \
+          -X POST "$GUARDIAN_API_URL" \
+          -H "Content-Type: application/json" \
+          -d "$PAYLOAD" || echo "000")
+
+        if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+          echo "::error::Constitution Guardian API unreachable/errored (HTTP $HTTP_CODE) — failing closed (research.md §2)"
+          exit 1
+        fi
+
+        VERDICT=$(grep -o '"verdict"\s*:\s*"[a-z]*"' /tmp/guardian-response.json | sed -E 's/.*"([a-z]+)"$/\1/' || true)
+
+        if [ "$VERDICT" != "pass" ]; then
+          echo "::error::Constitution Guardian verdict: ${VERDICT:-<missing/malformed>} — blocking merge"
+          cat /tmp/guardian-response.json || true
+          exit 1
+        fi
+
+        echo "Constitution Guardian verdict: pass"
