@@ -67,7 +67,18 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Redeploy previous known-good artifact (no rebuild)
-        run: ./scripts/deploy.sh "${{ inputs.environment }}" "${{ inputs.component }}" "${{ needs.find-previous-artifact.outputs.previous_tag }}"
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          DEV_BACKEND_RENDER_SERVICE_ID: ${{ vars.DEV_BACKEND_RENDER_SERVICE_ID }}
+          DEV_FRONTEND_RENDER_SERVICE_ID: ${{ vars.DEV_FRONTEND_RENDER_SERVICE_ID }}
+          PRE_BACKEND_RENDER_SERVICE_ID: ${{ vars.PRE_BACKEND_RENDER_SERVICE_ID }}
+          PRE_FRONTEND_RENDER_SERVICE_ID: ${{ vars.PRE_FRONTEND_RENDER_SERVICE_ID }}
+          PROD_BACKEND_RENDER_SERVICE_ID: ${{ vars.PROD_BACKEND_RENDER_SERVICE_ID }}
+          PROD_FRONTEND_RENDER_SERVICE_ID: ${{ vars.PROD_FRONTEND_RENDER_SERVICE_ID }}
+        run: |
+          KEY="$(echo "${{ inputs.environment }}_${{ inputs.component }}_RENDER_SERVICE_ID" | tr '[:lower:]' '[:upper:]')"
+          export RENDER_SERVICE_ID="${!KEY}"
+          ./scripts/deploy.sh "${{ inputs.environment }}" "${{ inputs.component }}" "${{ needs.find-previous-artifact.outputs.previous_tag }}"
       - name: Resolve target base URL
         id: url
         env:
