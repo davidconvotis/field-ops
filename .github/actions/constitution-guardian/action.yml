@@ -33,5 +33,10 @@ runs:
           NON-NEGOTIABLE o "DEBE", finaliza tu respuesta con la exit code
           distinta de cero explicando el principio violado. Si no hay
           violaciones, finaliza con éxito.
+        # Default model selection (opus + 1M-context beta) failed instantly
+        # (is_error:true, 0 cost, no result text) against this API key —
+        # pin an explicit standard model instead.
+        claude_args: |
+          --model claude-sonnet-5
       # Sin continue-on-error: cualquier fallo del step (API caída, timeout,
       # violación detectada) falla este job — fail-closed por defecto.

@@ -56,12 +56,16 @@ jobs:
         with:
           fetch-depth: 0
       - name: Checkout base contract (develop)
+        # oasdiff-action runs as a Docker container action — only
+        # GITHUB_WORKSPACE (and RUNNER_TEMP) are mounted into it, not the
+        # runner host's /tmp. Write the base spec inside the checkout so
+        # both `base:` and `revision:` resolve inside the container.
         run: |
           git fetch origin develop --depth=1
-          git show origin/develop:contracts/openapi.yaml > /tmp/base-openapi.yaml
+          git show origin/develop:contracts/openapi.yaml > contracts/.base-openapi.yaml
       - uses: oasdiff/oasdiff-action/breaking@024f6c399f9a21ada1addb0f9a36ce1bfac995f1 # v0.1.6
         with:
-          base: /tmp/base-openapi.yaml
+          base: contracts/.base-openapi.yaml
           revision: contracts/openapi.yaml
           fail-on: ERR
 
@@ -103,6 +107,7 @@ jobs:
         working-directory: backend
     env:
       DATABASE_URL: postgresql://fieldops:fieldops@localhost:5432/fieldops
+      JWT_DEV_SECRET: ci-smoke-test-secret-not-for-prod
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
