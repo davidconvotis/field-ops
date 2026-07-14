@@ -12,7 +12,7 @@ para `docs/ci-cd-branch-protection.md`.
 | Escaneo de secrets | Gitleaks | Front + Back | `pr-validation-*` | Sí |
 | Verificación ACs vs API | `check-acceptance.js` (por crear en Fase 6) | Back | `pr-validation-back` | Sí |
 | Vulnerabilidades de imagen | Trivy sobre imagen local (`docker build --load`) | Back | `pr-validation-back` | Sí |
-| Revisión de Constitución | Claude Code Action vía `CONSTITUTION_GUARDIAN_API_URL` | Front + Back | `pr-validation-*` | Sí (fail-closed) |
+| Revisión de Constitución | Cursor Agent CLI (oficial, instalado vía `cursor.com/install`) con `CURSOR_API_KEY` | Front + Back | `pr-validation-*` | Sí (fail-closed) |
 | Code review registrado | Job dummy, `needs:` todas las gates anteriores | Front + Back | `pr-validation-*` | Sí (certificación final) |
 
 ## Contrato de imagen publicada

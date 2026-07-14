@@ -20,7 +20,7 @@ soporte (`scripts/bump-version.sh` ya existe).
 
 **Primary Dependencies**: GitHub Actions runners (`ubuntu-latest`), Docker
 Buildx, GHCR (`ghcr.io`), Spectral CLI/Action, oasdiff CLI/Action, Gitleaks
-Action, Trivy Action, Claude Code Action (guardián de Constitución),
+Action, Trivy Action, Cursor Agent CLI (guardián de Constitución),
 `actions/upload-artifact`, `softprops/action-gh-release`.
 
 **Storage**: N/A (no persistencia propia; GHCR y GitHub Releases actúan como
@@ -123,7 +123,7 @@ lint+test (npm test) ──┬─► spectral (contrato OpenAPI)
                         ├─► gitleaks (secrets)
                         ├─► check-acceptance (ACs vs API)
                         ├─► trivy (imagen — requiere build previo de imagen local)
-                        └─► constitution-guardian (Claude Code Action)
+                        └─► constitution-guardian (Cursor Agent CLI)
                                 │
                                 ▼
                         code-review (job dummy, needs: [todos los anteriores])
@@ -204,7 +204,7 @@ dependencias (`needs:`), documentadas arriba.
 | Escaneo de secrets | Gitleaks | Front + Back | `pr-validation-*` |
 | Verificación ACs vs API | `check-acceptance.js` (por crear) | Back | `pr-validation-back` |
 | Vulnerabilidades de imagen | Trivy | Back (imagen backend) | `pr-validation-back` |
-| Revisión de Constitución | Claude Code Action | Front + Back | `pr-validation-*` |
+| Revisión de Constitución | Cursor Agent CLI | Front + Back | `pr-validation-*` |
 | Code review registrado | Job dummy | Front + Back | `pr-validation-*` |
 
 ## Decisión de plataforma CD (Capa 2, opcional)

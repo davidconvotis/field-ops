@@ -115,7 +115,7 @@ verificar que se crea un GitHub Release con el dist adjunto y la imagen
   prefijo, evitando que un tag mal formado dispare una release falsa.
 - ¿Qué pasa si Trivy detecta una vulnerabilidad crítica en la imagen? El job
   de build/push debe fallar y no publicar la imagen a GHCR.
-- ¿Qué pasa si el guardián de Constitución (Claude Code Action) no puede
+- ¿Qué pasa si el guardián de Constitución (Cursor Agent) no puede
   contactar la API del agente (timeout/error de red)? El gate debe fallar de
   forma segura (fail-closed), bloqueando el merge en vez de asumir éxito.
 
@@ -130,7 +130,7 @@ verificar que se crea un GitHub Release con el dist adjunto y la imagen
   `pr-validation-back.yml` con las gates: lint+test (`npm test`), Spectral
   (contrato OpenAPI), oasdiff (breaking changes), Gitleaks (secrets),
   `check-acceptance.js` (ACs vs API), Trivy (vulnerabilidades de imagen),
-  guardián de Constitución (Claude Code Action) y job dummy de code review.
+  guardián de Constitución (Cursor Agent) y job dummy de code review.
 - **FR-002**: CUANDO se abre o actualiza un PR de `feature/*` hacia `develop`
   con cambios en `frontend/`, el sistema DEBE ejecutar
   `pr-validation-front.yml` con las gates: lint+test, Gitleaks, guardián de

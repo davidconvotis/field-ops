@@ -27,13 +27,14 @@ dev/pre/prod) and non-blocking for the mandatory Capa 1 scope.
 
 ## Required repo secret (needed NOW, Capa 1 — not optional)
 
-`.github/actions/constitution-guardian` calls `anthropics/claude-code-action`
-directly (guardián de Constitución, FR-001/FR-002), which needs an Anthropic
+`.github/actions/constitution-guardian` installs the official Cursor CLI
+(`curl -fsS https://cursor.com/install | bash`) and invokes `cursor-agent`
+directly (guardián de Constitución, FR-001/FR-002), which needs a Cursor
 API key:
 
 | Secret | Used by |
 |---|---|
-| `ANTHROPIC_API_KEY` | `pr-validation-back`, `pr-validation-front` (via `constitution-guardian` composite action) |
+| `CURSOR_API_KEY` | `pr-validation-back`, `pr-validation-front` (via `constitution-guardian` composite action) |
 
 This is a secret (not a plain variable) — it's a credential, unlike the
 table below. It does **not** violate pipeline-constitution.md Principle VI
