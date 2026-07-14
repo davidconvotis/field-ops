@@ -1,43 +1,78 @@
 name: Constitution Guardian
 description: >
-  Invoca Claude Code Action para revisar el diff del PR contra
+  Instala el CLI oficial de Cursor (cursor-agent, vía cursor.com/install) y
+  lo invoca para revisar el diff del PR contra
   .specify/memory/constitution.md y pipeline-constitution.md. Fail-closed:
-  cualquier error (timeout, API caída) se trata como fallo de la gate, nunca
-  como aprobación implícita (spec.md Edge Cases).
+  cualquier error (timeout, API caída, veredicto ambiguo) se trata como
+  fallo de la gate, nunca como aprobación implícita (spec.md Edge Cases).
+  Sin Actions de terceros: el CURSOR_API_KEY solo lo ve el CLI oficial.
 
 inputs:
-  anthropic-api-key:
-    description: API key de Anthropic (secrets.ANTHROPIC_API_KEY)
-    required: true
-  github-token:
-    description: Token para que la action comente en el PR
+  cursor-api-key:
+    description: API key de Cursor (secrets.CURSOR_API_KEY)
     required: true
 
 runs:
   using: composite
   steps:
-    # timeout-minutes en el job que invoca esta action (no aquí) cubre el caso
-    # de timeout/colgado — si el step no termina en el plazo del job, GitHub
-    # Actions marca el job como failed, que es el comportamiento fail-closed
-    # requerido (spec.md Edge Cases: timeout/error de red bloquea el merge).
-    - name: Run Claude Code Action (constitution review)
+    # timeout-minutes en el job que invoca esta action (no aquí) cubre el
+    # caso de timeout/colgado del CLI — si el step no termina en el plazo
+    # del job, GitHub Actions marca el job como failed (fail-closed, spec.md
+    # Edge Cases: timeout/error de red bloquea el merge).
+    - name: Install cursor-agent CLI (official installer)
+      shell: bash
+      run: curl -fsS https://cursor.com/install | bash
+
+    - name: Run Cursor Agent (constitution review)
       id: guardian
-      uses: anthropics/claude-code-action@f1bd27ca5b54584506e40e17884d90bdaaa1a9b3 # v1.0.173
-      with:
-        anthropic_api_key: ${{ inputs.anthropic-api-key }}
-        github_token: ${{ inputs.github-token }}
-        prompt: |
-          Revisa el diff de este PR contra las reglas NON-NEGOTIABLE de
-          .specify/memory/constitution.md y pipeline-constitution.md.
-          Si encuentras una violación clara de un principio marcado
-          NON-NEGOTIABLE o "DEBE", finaliza tu respuesta con la exit code
-          distinta de cero explicando el principio violado. Si no hay
-          violaciones, finaliza con éxito.
-        # Default model selection (opus + 1M-context beta) failed instantly
-        # (is_error:true, 0 cost, no result text) against this API key —
-        # pin an explicit standard model instead.
-        claude_args: |
-          --model claude-sonnet-5
-        show_full_output: "true"
-      # Sin continue-on-error: cualquier fallo del step (API caída, timeout,
-      # violación detectada) falla este job — fail-closed por defecto.
+      shell: bash
+      env:
+        CURSOR_API_KEY: ${{ inputs.cursor-api-key }}
+      run: |
+        set -o pipefail
+        PROMPT='Revisa el diff de este PR contra las reglas NON-NEGOTIABLE de
+        .specify/memory/constitution.md y pipeline-constitution.md.
+        Responde con una única línea:
+        - Si encuentras una violación clara de un principio marcado
+          NON-NEGOTIABLE o "DEBE", responde exactamente
+          "CONSTITUTION_VIOLATION: <principio violado>".
+        - Si no hay violaciones, responde exactamente "CONSTITUTION_OK".
+        No respondas nada más.'
+
+        OUTPUT=$("$HOME/.local/bin/cursor-agent" \
+          --print \
+          --mode ask \
+          --trust \
+          --output-format text \
+          "$PROMPT")
+        STATUS=$?
+
+        echo "$OUTPUT"
+        {
+          echo "summary<<GUARDIAN_EOF"
+          echo "$OUTPUT"
+          echo "GUARDIAN_EOF"
+          echo "exit-code=$STATUS"
+        } >> "$GITHUB_OUTPUT"
+
+    # cursor-agent puede devolver 0 aunque el veredicto sea ambiguo/vacío —
+    # evaluamos el texto explícitamente y fallamos cerrado ante violación,
+    # error de proceso, o respuesta ambigua (ninguna asume aprobación).
+    - name: Evaluate verdict (fail-closed)
+      shell: bash
+      env:
+        SUMMARY: ${{ steps.guardian.outputs.summary }}
+        EXIT_CODE: ${{ steps.guardian.outputs.exit-code }}
+      run: |
+        if [ "${EXIT_CODE:-1}" != "0" ]; then
+          echo "::error::cursor-agent process exit code: ${EXIT_CODE:-<empty>} (fail-closed)."
+          exit 1
+        fi
+        if echo "$SUMMARY" | grep -q "CONSTITUTION_VIOLATION:"; then
+          echo "::error::Constitution guardian detectó una violación: $SUMMARY"
+          exit 1
+        fi
+        if ! echo "$SUMMARY" | grep -q "CONSTITUTION_OK"; then
+          echo "::error::Veredicto ambiguo o vacío del guardián (fail-closed): $SUMMARY"
+          exit 1
+        fi

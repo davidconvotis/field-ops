@@ -63,15 +63,27 @@ de plan.md y sus alternativas descartadas.
   push (rechazado — permite que una imagen vulnerable llegue a existir en
   GHCR, aunque sea snapshot).
 
-## 5. Guardián de Constitución (Claude Code Action)
+## 5. Guardián de Constitución (Cursor Agent CLI)
 
-- **Decision**: job independiente en cada `pr-validation-*.yml` que invoca
-  la Action vía variable de entorno `CONSTITUTION_GUARDIAN_API_URL`
-  (ver `docs/ci-cd-environment-setup.md`), fail-closed ante timeout/error.
+- **Decision**: job independiente en cada `pr-validation-*.yml` que instala
+  el CLI oficial de Cursor (`curl -fsS https://cursor.com/install | bash`,
+  aprobado explícitamente por el autor) e invoca
+  `cursor-agent --print --mode ask --trust` con `secrets.CURSOR_API_KEY`.
+  El veredicto se evalúa por texto (`CONSTITUTION_VIOLATION:` /
+  `CONSTITUTION_OK`), fail-closed ante exit-code no cero, violación
+  detectada, o respuesta ambigua/vacía.
 - **Rationale**: consistente con Edge Case de spec.md (fail-closed evita que
-  un fallo de red se interprete como aprobación implícita).
-- **Alternatives considered**: fail-open con reintento (rechazado — viola el
-  principio de que ninguna gate debe aprobar por defecto ante error).
+  un fallo de red o un veredicto ambiguo se interprete como aprobación
+  implícita). Se usa el CLI oficial directamente (no una GitHub Action de
+  terceros) para que el secret `CURSOR_API_KEY` nunca pase por código no
+  auditado de un tercero — solo por el binario oficial de Cursor.
+- **Alternatives considered**: `anthropics/claude-code-action` (diseño
+  inicial de este pipeline — sustituido a petición explícita del autor por
+  Cursor Agent); GitHub Action de terceros `PunGrumpy/cursor-action`
+  (rechazada — no es oficial de Cursor/Anysphere, delegaría el secret a
+  código de un desarrollador individual sin aprobación explícita); fail-open
+  con reintento (rechazado — viola el principio de que ninguna gate debe
+  aprobar por defecto ante error).
 
 ## 6. Plataforma CD (Capa 2)
 
