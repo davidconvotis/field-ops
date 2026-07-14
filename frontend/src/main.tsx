@@ -8,4 +8,3 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
     <App />
   </React.StrictMode>,
 );
-// smoke test ci-develop-front
