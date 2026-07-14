@@ -225,9 +225,12 @@ verificar que se crea un GitHub Release con el dist adjunto y la imagen
 
 - Los 6 workflows son independientes entre sí (sin triggers cruzados),
   siguiendo el diseño de `pipeline-constitution.md`.
-- Las gates de validación (Spectral, oasdiff, Gitleaks, check-acceptance,
-  Trivy) ya existen como scripts/configuración de la fase M9 y solo se
-  integran en los nuevos workflows, no se rediseñan.
+- El contrato OpenAPI ya existe (`contracts/openapi.yaml`) como target de
+  Spectral/oasdiff. Las herramientas de gate (Spectral, oasdiff, Gitleaks,
+  Trivy) se invocan vía Action/CLI con configuración por defecto o mínima —
+  no requieren rediseño de gate lógico, solo cableado en los workflows.
+  `check-acceptance.js` no existe aún en el repo y se crea como parte de la
+  implementación de `pr-validation-back.yml` (tarea de Fase 6).
 - El repositorio es público o el plan de GitHub incluye GHCR sin costo
   adicional relevante para este alcance.
 - La creación de tags semver para `main` está automatizada vía
