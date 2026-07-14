@@ -38,4 +38,3 @@ if (require.main === module) {
 }
 
 module.exports = app;
-// smoke test ci-develop-back
