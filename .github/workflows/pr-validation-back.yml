@@ -121,16 +121,15 @@ jobs:
       - run: npm run seed
       - run: npm run build
       - name: Start API in background
-        env:
-          NODE_ENV: production
+        # NODE_ENV must NOT be production: backend/src/middleware/tlsEnforce.ts
+        # rejects all plain-HTTP requests with 400 when NODE_ENV=production,
+        # which made every /health check (including wait-on's) fail — there's
+        # no TLS terminator in this ephemeral CI job.
         # nohup + disown: otherwise the backgrounded node process gets
         # killed when this step's shell exits, before "Wait for API" runs.
         run: nohup node dist/src/api/app.js > /tmp/api.log 2>&1 & disown
       - name: Wait for API
         run: npx wait-on http://localhost:3000/health -t 30000
-      - name: Show API log (debug)
-        if: always()
-        run: cat /tmp/api.log || true
       - run: node scripts/check-acceptance.js
 
   trivy:
