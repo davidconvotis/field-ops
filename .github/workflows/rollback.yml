@@ -1,0 +1,98 @@
+name: rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      component:
+        description: "backend | frontend"
+        required: true
+        type: choice
+        options: [backend, frontend]
+      environment:
+        description: "dev | pre | prod"
+        required: true
+        type: choice
+        options: [dev, pre, prod]
+
+concurrency:
+  group: ${{ inputs.environment }}-${{ inputs.component }}
+  cancel-in-progress: false
+
+jobs:
+  find-previous-artifact:
+    runs-on: ubuntu-latest
+    permissions:
+      deployments: read
+    outputs:
+      previous_tag: ${{ steps.find.outputs.previous_tag }}
+    steps:
+      - id: find
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const component = '${{ inputs.component }}';
+            const environment = '${{ inputs.environment }}';
+            const envKey = `${environment}-${component}`;
+
+            // [0] is the current (bad) deployment, [1] is the previous known-good one
+            // (research.md §3 — single immediately-previous artifact, no arbitrary picker).
+            const deployments = await github.rest.repos.listDeployments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              environment: envKey,
+              per_page: 2,
+            });
+
+            if (deployments.data.length < 2) {
+              core.setFailed(`No previous deployment recorded for ${envKey} — rollback target does not exist (spec.md Edge Cases)`);
+              return;
+            }
+
+            let payload = deployments.data[1].payload;
+            if (typeof payload === 'string') payload = JSON.parse(payload);
+
+            if (!payload || !payload.artifact_tag) {
+              core.setFailed(`Previous deployment record for ${envKey} has no artifact_tag — cannot roll back`);
+              return;
+            }
+
+            core.setOutput('previous_tag', payload.artifact_tag);
+
+  rollback:
+    needs: find-previous-artifact
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Redeploy previous known-good artifact (no rebuild)
+        run: ./scripts/deploy.sh "${{ inputs.environment }}" "${{ inputs.component }}" "${{ needs.find-previous-artifact.outputs.previous_tag }}"
+      - name: Resolve target base URL
+        id: url
+        env:
+          DEV_BACKEND_URL: ${{ vars.DEV_BACKEND_URL }}
+          DEV_FRONTEND_URL: ${{ vars.DEV_FRONTEND_URL }}
+          PRE_BACKEND_URL: ${{ vars.PRE_BACKEND_URL }}
+          PRE_FRONTEND_URL: ${{ vars.PRE_FRONTEND_URL }}
+          PROD_BACKEND_URL: ${{ vars.PROD_BACKEND_URL }}
+          PROD_FRONTEND_URL: ${{ vars.PROD_FRONTEND_URL }}
+        run: |
+          KEY="$(echo "${{ inputs.environment }}_${{ inputs.component }}_URL" | tr '[:lower:]' '[:upper:]')"
+          echo "base_url=${!KEY}" >> "$GITHUB_OUTPUT"
+      - name: Health check
+        id: health
+        uses: ./.github/actions/health-check
+        with:
+          component: ${{ inputs.component }}
+          base_url: ${{ steps.url.outputs.base_url }}
+          environment: ${{ inputs.environment }}
+      - name: Record rollback
+        if: always()
+        uses: ./.github/actions/record-deployment
+        with:
+          environment: ${{ inputs.environment }}
+          component: ${{ inputs.component }}
+          artifact_tag: ${{ needs.find-previous-artifact.outputs.previous_tag }}
+          trigger: rollback
+          health_check_result: ${{ steps.health.outcome == 'success' && 'pass' || 'fail' }}

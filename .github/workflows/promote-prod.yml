@@ -1,0 +1,103 @@
+name: promote-prod
+
+on:
+  workflow_dispatch:
+    inputs:
+      component:
+        description: "backend | frontend"
+        required: true
+        type: choice
+        options: [backend, frontend]
+      image_tag:
+        description: "The exact release tag currently running in pre (e.g. 1.2.0)"
+        required: true
+        type: string
+
+concurrency:
+  group: prod-${{ inputs.component }}
+  cancel-in-progress: false
+
+jobs:
+  verify-pre-artifact:
+    runs-on: ubuntu-latest
+    permissions:
+      deployments: read
+    outputs:
+      verified: ${{ steps.check.outputs.verified }}
+    steps:
+      - id: check
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const component = '${{ inputs.component }}';
+            const imageTag = '${{ inputs.image_tag }}';
+            const envKey = `pre-${component}`;
+
+            const deployments = await github.rest.repos.listDeployments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              environment: envKey,
+              per_page: 1,
+            });
+
+            if (deployments.data.length === 0) {
+              core.setFailed(`No deployment record found for ${envKey} — cannot verify pre artifact (FR-013/016)`);
+              return;
+            }
+
+            const deployment = deployments.data[0];
+            let payload = deployment.payload;
+            if (typeof payload === 'string') payload = JSON.parse(payload);
+
+            if (!payload || payload.artifact_tag !== imageTag) {
+              core.setFailed(`image_tag '${imageTag}' does not match the artifact currently running in ${envKey} ('${payload && payload.artifact_tag}') — rejecting promotion (FR-013/016)`);
+              return;
+            }
+
+            // FR-011c/FR-012: for backend, deploy-pre's health_check_result already folds
+            // in check-aceptance.js's outcome (not just health-check) before it's recorded
+            // as this deployment's status — so checking the latest status here also blocks
+            // promotion when the acceptance check failed, with no backend-specific logic.
+            const statuses = await github.rest.repos.listDeploymentStatuses({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: deployment.id,
+              per_page: 1,
+            });
+
+            const latestState = statuses.data.length > 0 ? statuses.data[0].state : null;
+            if (latestState !== 'success') {
+              core.setFailed(`${envKey}'s deployment '${imageTag}' is not healthy (latest status: '${latestState}') — rejecting promotion (FR-011c/FR-012)`);
+              return;
+            }
+
+            core.setOutput('verified', 'true');
+
+  promote:
+    needs: verify-pre-artifact
+    if: needs.verify-pre-artifact.outputs.verified == 'true'
+    runs-on: ubuntu-latest
+    environment: prod
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Deploy the exact pre-validated image to prod (no rebuild)
+        run: ./scripts/deploy.sh prod "${{ inputs.component }}" "${{ inputs.image_tag }}"
+      - name: Health check prod
+        id: health
+        uses: ./.github/actions/health-check
+        with:
+          component: ${{ inputs.component }}
+          base_url: ${{ inputs.component == 'backend' && vars.PROD_BACKEND_URL || vars.PROD_FRONTEND_URL }}
+          environment: prod
+      - name: Record deployment
+        if: always()
+        uses: ./.github/actions/record-deployment
+        with:
+          environment: prod
+          component: ${{ inputs.component }}
+          artifact_tag: ${{ inputs.image_tag }}
+          trigger: manual-promotion
+          health_check_result: ${{ steps.health.outcome == 'success' && 'pass' || 'fail' }}

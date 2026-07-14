@@ -1,0 +1,61 @@
+name: "Record Deployment"
+description: >
+  Writes a Deployment Record via the GitHub Deployments API (data-model.md,
+  spec.md FR-021/NFR-006) — environment, component, artifact tag, trigger,
+  actor, timestamp. Also used by rollback.yml to look up "the previous
+  artifact" for a (component, environment) pair.
+
+inputs:
+  environment:
+    description: "dev | pre | prod"
+    required: true
+  component:
+    description: "backend | frontend"
+    required: true
+  artifact_tag:
+    description: "The image tag that was deployed"
+    required: true
+  trigger:
+    description: "auto-deploy | manual-promotion | rollback"
+    required: true
+  health_check_result:
+    description: "pass | fail"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Create GitHub Deployment record
+      uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+      with:
+        script: |
+          const { environment, component, artifact_tag, trigger, health_check_result } = {
+            environment: '${{ inputs.environment }}',
+            component: '${{ inputs.component }}',
+            artifact_tag: '${{ inputs.artifact_tag }}',
+            trigger: '${{ inputs.trigger }}',
+            health_check_result: '${{ inputs.health_check_result }}',
+          };
+
+          const envKey = `${environment}-${component}`;
+
+          const deployment = await github.rest.repos.createDeployment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            ref: context.sha,
+            environment: envKey,
+            auto_merge: false,
+            required_contexts: [],
+            description: `${trigger}: ${artifact_tag}`,
+            payload: { component, artifact_tag, trigger },
+          });
+
+          if (deployment.data && deployment.data.id) {
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: deployment.data.id,
+              state: health_check_result === 'pass' ? 'success' : 'failure',
+              description: `health_check_result=${health_check_result}`,
+            });
+          }

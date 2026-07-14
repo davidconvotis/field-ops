@@ -1,0 +1,18 @@
+title = "FieldOps gitleaks config"
+
+# Shared by pr-validation-back and pr-validation-front (specs/004-ci-cd-pipeline
+# spec.md FR-003d/FR-006b). Extends the default gitleaks ruleset; only repo-local
+# false-positive paths are allowlisted below.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Paths with no real secrets — fixtures/mocks only"
+paths = [
+  '''(.*/)?node_modules/.*''',
+  '''(.*/)?dist/.*''',
+  '''(.*/)?\.git/.*''',
+  '''backend/prisma/.*\.test\.prisma$''',
+  '''(.*/)?tests?/.*fixtures?/.*''',
+]
