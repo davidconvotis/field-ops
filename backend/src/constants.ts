@@ -44,6 +44,7 @@ const STORAGE_TIMEOUT_MS: number = Number(process.env.STORAGE_TIMEOUT_MS || 5000
 function addMonths(date: Date, months: number): Date {
   const d = new Date(date);
   d.setMonth(d.getMonth() + months);
+  console.log(d)
   return d;
 }
 
