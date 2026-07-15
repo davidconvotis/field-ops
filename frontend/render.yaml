@@ -1,14 +1,18 @@
 # Render Blueprint — frontend service only.
+# Image-backed: CI (ci-develop-front.yml / ci-main-front.yml) builds the
+# nginx image from frontend/Dockerfile and pushes to GHCR, then deploy.sh
+# POSTs {"imageUrl": ...} to /v1/services/:id/deploys. That endpoint 400s
+# with "cannot deploy images for non-image backed service" on anything but
+# runtime: image (a static site can't be image-backed at all) — keep in sync.
+# GHCR package must be public, or add registryCredential in the Render
+# dashboard (image-pull credentials aren't expressible in this blueprint).
 # Deploy independently with the Render CLI from repo root:
 #   render blueprint launch -f frontend/render.yaml
 #   render deploy -f frontend/render.yaml
 services:
   - type: web
     name: fieldops-frontend
-    runtime: static
-    buildCommand: ./scripts/render-build-frontend.sh
-    staticPublishPath: frontend/dist
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
+    runtime: image
+    plan: starter
+    image:
+      url: ghcr.io/davidconvotis/field-ops/fieldops-front:latest

@@ -1,14 +1,20 @@
 # Render Blueprint — backend service only.
+# Image-backed: CI (ci-develop-back.yml / ci-main-back.yml) builds and pushes
+# to GHCR, then deploy.sh POSTs {"imageUrl": ...} to /v1/services/:id/deploys.
+# That endpoint 400s with "cannot deploy images for non-image backed service"
+# on any service not provisioned with runtime: image — keep this in sync.
+# GHCR package must be public, or add registryCredential in the Render
+# dashboard (image-pull credentials aren't expressible in this blueprint).
 # Deploy independently with the Render CLI from repo root:
 #   render blueprint launch -f backend/render.yaml
 #   render deploy -f backend/render.yaml
 services:
   - type: web
     name: fieldops-backend
-    runtime: node
+    runtime: image
     plan: starter
-    buildCommand: ./scripts/render-build-backend.sh
-    startCommand: node backend/dist/src/api/app.js
+    image:
+      url: ghcr.io/davidconvotis/field-ops/fieldops-back:latest
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
