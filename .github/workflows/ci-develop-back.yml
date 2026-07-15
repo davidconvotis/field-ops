@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   ci:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       contents: read
     defaults:
@@ -52,7 +52,7 @@ jobs:
 
   push-image:
     needs: ci
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       contents: read
       packages: write
@@ -72,7 +72,7 @@ jobs:
 
   deploy:
     needs: [ci, push-image]
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     concurrency:
       group: dev-backend
       cancel-in-progress: false

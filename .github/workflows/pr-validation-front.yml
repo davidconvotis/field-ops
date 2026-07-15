@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   lint-test:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       contents: read
     defaults:
@@ -33,7 +33,7 @@ jobs:
 
   gitleaks:
     needs: lint-test
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       contents: read
       pull-requests: read # gitleaks-action's PR scan mode calls GET /pulls/:number/commits
@@ -47,7 +47,7 @@ jobs:
 
   constitution-guardian:
     needs: lint-test
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     timeout-minutes: 10
     permissions:
       contents: read
@@ -59,7 +59,7 @@ jobs:
 
   code-review:
     needs: [gitleaks, constitution-guardian]
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       contents: read
     steps:

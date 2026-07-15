@@ -19,7 +19,7 @@ concurrency:
 
 jobs:
   verify-pre-artifact:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       deployments: read
     outputs:
@@ -76,7 +76,7 @@ jobs:
   promote:
     needs: verify-pre-artifact
     if: needs.verify-pre-artifact.outputs.verified == 'true'
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     environment: prod
     permissions:
       contents: read

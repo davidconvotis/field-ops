@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   lint-test:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       contents: read
     defaults:
@@ -36,7 +36,7 @@ jobs:
 
   spectral:
     needs: lint-test
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       contents: read
     steps:
@@ -47,7 +47,7 @@ jobs:
 
   oasdiff:
     needs: lint-test
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       contents: read
       pull-requests: write
@@ -71,7 +71,7 @@ jobs:
 
   gitleaks:
     needs: lint-test
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       contents: read
       pull-requests: read # gitleaks-action's PR scan mode calls GET /pulls/:number/commits
@@ -85,7 +85,7 @@ jobs:
 
   check-acceptance:
     needs: lint-test
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       contents: read
     services:
@@ -134,7 +134,7 @@ jobs:
 
   trivy:
     needs: lint-test
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     continue-on-error: true # gate opcional: no bloquea el pipeline si falla
     permissions:
       contents: read
@@ -157,7 +157,7 @@ jobs:
 
   constitution-guardian:
     needs: lint-test
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     timeout-minutes: 10
     permissions:
       contents: read
@@ -168,9 +168,8 @@ jobs:
           cursor-api-key: ${{ secrets.CURSOR_API_KEY }}
 
   code-review:
-    needs:
-      [spectral, oasdiff, gitleaks, check-acceptance, trivy, constitution-guardian]
-    runs-on: ubuntu-latest
+    needs: [spectral, oasdiff, gitleaks, check-acceptance, trivy, constitution-guardian]
+    runs-on: self-hosted
     permissions:
       contents: read
     steps:

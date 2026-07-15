@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   ci:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       contents: read
     defaults:
@@ -50,7 +50,7 @@ jobs:
 
   push-image:
     needs: ci
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       contents: read
       packages: write
@@ -70,7 +70,7 @@ jobs:
 
   gh-release:
     needs: ci
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       contents: write
     steps:

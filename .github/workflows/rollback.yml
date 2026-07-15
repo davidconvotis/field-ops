@@ -20,7 +20,7 @@ concurrency:
 
 jobs:
   find-previous-artifact:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       deployments: read
     outputs:
@@ -60,7 +60,7 @@ jobs:
 
   rollback:
     needs: find-previous-artifact
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       contents: read
       deployments: write
