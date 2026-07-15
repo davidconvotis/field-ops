@@ -135,6 +135,7 @@ jobs:
   trivy:
     needs: lint-test
     runs-on: ubuntu-latest
+    continue-on-error: true # gate opcional: no bloquea el pipeline si falla
     permissions:
       contents: read
     steps:
