@@ -1,0 +1,512 @@
+{
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/jest.config.js": {
+    "mtime": 1783931984.5977657,
+    "ast_hash": "dc18323ba675708610df2826b1061751",
+    "semantic_hash": "dc18323ba675708610df2826b1061751"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/package.json": {
+    "mtime": 1783932024.3719997,
+    "ast_hash": "1dc5053fd0fe1f0645139833cfbfb441",
+    "semantic_hash": "1dc5053fd0fe1f0645139833cfbfb441"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/prisma/clean.ts": {
+    "mtime": 1783932405.483461,
+    "ast_hash": "b14404934410e02d49187484b2150297",
+    "semantic_hash": "b14404934410e02d49187484b2150297"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/prisma/migrations/20260710173812_init/migration.sql": {
+    "mtime": 1783705092.5589113,
+    "ast_hash": "63dff87aa97adf6d35a969e3cc0602a8",
+    "semantic_hash": "63dff87aa97adf6d35a969e3cc0602a8"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/prisma/migrations/20260713105142_init/migration.sql": {
+    "mtime": 1783939902.6422987,
+    "ast_hash": "02aacf3a23aa60dcb6ecae107ab96353",
+    "semantic_hash": "02aacf3a23aa60dcb6ecae107ab96353"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/prisma/seed.ts": {
+    "mtime": 1783939720.2871923,
+    "ast_hash": "be6e62adb4f7c9f31697d64632417255",
+    "semantic_hash": "be6e62adb4f7c9f31697d64632417255"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/scripts/check-acceptance.js": {
+    "mtime": 1784024298.7633038,
+    "ast_hash": "c199e758d1b71214fd130945f49fb280",
+    "semantic_hash": "c199e758d1b71214fd130945f49fb280"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/adapters/encryptionAdapter.ts": {
+    "mtime": 1783932361.2647045,
+    "ast_hash": "9a05d2c86754f0d7bea086cbf8db307a",
+    "semantic_hash": "9a05d2c86754f0d7bea086cbf8db307a"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/adapters/idpAdapter.ts": {
+    "mtime": 1783932362.318135,
+    "ast_hash": "4480b9f5192363914e2b67f96fadd760",
+    "semantic_hash": "4480b9f5192363914e2b67f96fadd760"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/adapters/retentionJob.ts": {
+    "mtime": 1783932363.1028156,
+    "ast_hash": "84fdb8018dcccf840ae55a6af259dbc2",
+    "semantic_hash": "84fdb8018dcccf840ae55a6af259dbc2"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/adapters/storageAdapter.ts": {
+    "mtime": 1783932363.9659793,
+    "ast_hash": "20fdefbb37b664580509b15c8c9013d0",
+    "semantic_hash": "20fdefbb37b664580509b15c8c9013d0"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/api/app.ts": {
+    "mtime": 1784034213.8834724,
+    "ast_hash": "553c3b82c029ac876c4986c75c0e0a9e",
+    "semantic_hash": "553c3b82c029ac876c4986c75c0e0a9e"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/api/auth.ts": {
+    "mtime": 1783933105.1613543,
+    "ast_hash": "ff61b1b18ff3f5aaa771620f66a880d2",
+    "semantic_hash": "ff61b1b18ff3f5aaa771620f66a880d2"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/api/clients.ts": {
+    "mtime": 1783938461.0863464,
+    "ast_hash": "d5e29ee3d07a67a047b41ebaa43f5d7b",
+    "semantic_hash": "d5e29ee3d07a67a047b41ebaa43f5d7b"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/api/executions.ts": {
+    "mtime": 1783933308.2187154,
+    "ast_hash": "5e24e1bb0b08f15c8351877f316e2fc3",
+    "semantic_hash": "5e24e1bb0b08f15c8351877f316e2fc3"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/api/orders.ts": {
+    "mtime": 1783938491.9029775,
+    "ast_hash": "3a259ed49e3edb6f125aba7b12fc6443",
+    "semantic_hash": "3a259ed49e3edb6f125aba7b12fc6443"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/api/reviews.ts": {
+    "mtime": 1783933128.450096,
+    "ast_hash": "e91a1e5758f7a2dda61eaf718e57e0ff",
+    "semantic_hash": "e91a1e5758f7a2dda61eaf718e57e0ff"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/api/technicians.ts": {
+    "mtime": 1783938449.7949297,
+    "ast_hash": "6fda3772d430669d1f4ed66a6be91794",
+    "semantic_hash": "6fda3772d430669d1f4ed66a6be91794"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/constants.ts": {
+    "mtime": 1784027425.8638616,
+    "ast_hash": "997570d917c9a029b7554a22d4497197",
+    "semantic_hash": "997570d917c9a029b7554a22d4497197"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/db/prismaClient.ts": {
+    "mtime": 1783932317.732773,
+    "ast_hash": "8996484a2641362e85aa80260e7fff09",
+    "semantic_hash": "8996484a2641362e85aa80260e7fff09"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/generated/prisma-test-client/default.d.ts": {
+    "mtime": 1783939900.3235497,
+    "ast_hash": "6cfa5c5e0b5de6abfc20f2532414712c",
+    "semantic_hash": "6cfa5c5e0b5de6abfc20f2532414712c"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/generated/prisma-test-client/default.js": {
+    "mtime": 1783939900.3233051,
+    "ast_hash": "1f0db1021cfeac03b7418b20a4eedd9c",
+    "semantic_hash": "1f0db1021cfeac03b7418b20a4eedd9c"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/generated/prisma-test-client/edge.d.ts": {
+    "mtime": 1783939900.3235939,
+    "ast_hash": "b1a34f9b323447f227db5aa901d5f3a9",
+    "semantic_hash": "b1a34f9b323447f227db5aa901d5f3a9"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/generated/prisma-test-client/edge.js": {
+    "mtime": 1783939900.3236685,
+    "ast_hash": "4532f80bd46002cc13cd5eac70dce2ab",
+    "semantic_hash": "4532f80bd46002cc13cd5eac70dce2ab"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/generated/prisma-test-client/index-browser.js": {
+    "mtime": 1783939900.3232944,
+    "ast_hash": "2fe002de7f71dcc5e69b3c321f13ae38",
+    "semantic_hash": "2fe002de7f71dcc5e69b3c321f13ae38"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/generated/prisma-test-client/index.d.ts": {
+    "mtime": 1783939900.3233125,
+    "ast_hash": "61e34c332c683aa2ec43bd8716340314",
+    "semantic_hash": "61e34c332c683aa2ec43bd8716340314"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/generated/prisma-test-client/index.js": {
+    "mtime": 1783939900.3235345,
+    "ast_hash": "21284e054d6a733728fbce74b741d5b3",
+    "semantic_hash": "21284e054d6a733728fbce74b741d5b3"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/generated/prisma-test-client/package.json": {
+    "mtime": 1783939900.32358,
+    "ast_hash": "0e869b39852160b9c5cb4c9861fb0e85",
+    "semantic_hash": "0e869b39852160b9c5cb4c9861fb0e85"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/generated/prisma-test-client/runtime/edge-esm.js": {
+    "mtime": 1783939900.3255012,
+    "ast_hash": "15821fa6980edcb9b64b1865f25b8157",
+    "semantic_hash": "15821fa6980edcb9b64b1865f25b8157"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/generated/prisma-test-client/runtime/edge.js": {
+    "mtime": 1783939900.3256106,
+    "ast_hash": "ef2cdf9fbff77bc248a9b351752d1f41",
+    "semantic_hash": "ef2cdf9fbff77bc248a9b351752d1f41"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/generated/prisma-test-client/runtime/index-browser.d.ts": {
+    "mtime": 1783939900.3245418,
+    "ast_hash": "1e7903aca521a7d99dbec5a0326869a9",
+    "semantic_hash": "1e7903aca521a7d99dbec5a0326869a9"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/generated/prisma-test-client/runtime/index-browser.js": {
+    "mtime": 1783939900.3251438,
+    "ast_hash": "47ad277444d7de18b821d36c0c81a9d1",
+    "semantic_hash": "47ad277444d7de18b821d36c0c81a9d1"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/generated/prisma-test-client/runtime/library.d.ts": {
+    "mtime": 1783939900.3254094,
+    "ast_hash": "e54698694a31b910b17d9ba7cb94d045",
+    "semantic_hash": "e54698694a31b910b17d9ba7cb94d045"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/generated/prisma-test-client/runtime/library.js": {
+    "mtime": 1783939900.3261552,
+    "ast_hash": "db7d9eb928156875559563848c73594c",
+    "semantic_hash": "db7d9eb928156875559563848c73594c"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/generated/prisma-test-client/runtime/react-native.js": {
+    "mtime": 1783939900.3282058,
+    "ast_hash": "081c2344052e924d1c98e78b697d6175",
+    "semantic_hash": "081c2344052e924d1c98e78b697d6175"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/generated/prisma-test-client/runtime/wasm.js": {
+    "mtime": 1783939900.3277972,
+    "ast_hash": "952d4c9478106839749640fb5a16eb52",
+    "semantic_hash": "952d4c9478106839749640fb5a16eb52"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/generated/prisma-test-client/wasm.d.ts": {
+    "mtime": 1783939900.3235373,
+    "ast_hash": "6cfa5c5e0b5de6abfc20f2532414712c",
+    "semantic_hash": "6cfa5c5e0b5de6abfc20f2532414712c"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/generated/prisma-test-client/wasm.js": {
+    "mtime": 1783939900.3236268,
+    "ast_hash": "2fe002de7f71dcc5e69b3c321f13ae38",
+    "semantic_hash": "2fe002de7f71dcc5e69b3c321f13ae38"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/middleware/authn.ts": {
+    "mtime": 1783932261.4009273,
+    "ast_hash": "1c042af8ca01cd6ea804380a8657c754",
+    "semantic_hash": "1c042af8ca01cd6ea804380a8657c754"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/middleware/errorHandler.ts": {
+    "mtime": 1783933383.8270497,
+    "ast_hash": "993ca77a2bd2e6b1c88fce495d90606b",
+    "semantic_hash": "993ca77a2bd2e6b1c88fce495d90606b"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/middleware/loginRateLimit.ts": {
+    "mtime": 1783932267.1425111,
+    "ast_hash": "1461427609e1fe7de8beb4511ac02c59",
+    "semantic_hash": "1461427609e1fe7de8beb4511ac02c59"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/middleware/rbac.ts": {
+    "mtime": 1783932269.6467543,
+    "ast_hash": "03aee1e1e6093477510bf8299ad992ab",
+    "semantic_hash": "03aee1e1e6093477510bf8299ad992ab"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/middleware/tlsEnforce.ts": {
+    "mtime": 1783932272.4055474,
+    "ast_hash": "9d7ebc0e983a331d7cd5931c7318e7de",
+    "semantic_hash": "9d7ebc0e983a331d7cd5931c7318e7de"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/services/auditService.ts": {
+    "mtime": 1783932412.350534,
+    "ast_hash": "7eff92e5248180ae192018a52ebfc4d9",
+    "semantic_hash": "7eff92e5248180ae192018a52ebfc4d9"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/services/authService.ts": {
+    "mtime": 1783933271.7768576,
+    "ast_hash": "0bfd6c6cfdf79b4bb0838f7e134910bd",
+    "semantic_hash": "0bfd6c6cfdf79b4bb0838f7e134910bd"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/services/clientService.ts": {
+    "mtime": 1783938854.0017452,
+    "ast_hash": "660b4af3bf5ff0f6cb4a71cba474e8a3",
+    "semantic_hash": "660b4af3bf5ff0f6cb4a71cba474e8a3"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/services/executionService.ts": {
+    "mtime": 1783933287.395053,
+    "ast_hash": "1bb24e76187609fe3bf5c929f0e6cfec",
+    "semantic_hash": "1bb24e76187609fe3bf5c929f0e6cfec"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/services/fileValidation.ts": {
+    "mtime": 1783932482.4460666,
+    "ast_hash": "26a5371ecf814a64025a7e6efcd67a48",
+    "semantic_hash": "26a5371ecf814a64025a7e6efcd67a48"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/services/orderLock.ts": {
+    "mtime": 1783932443.0895233,
+    "ast_hash": "493b02bae295a593c559784b463ff4bd",
+    "semantic_hash": "493b02bae295a593c559784b463ff4bd"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/services/orderService.ts": {
+    "mtime": 1783938430.1831102,
+    "ast_hash": "655ff3dc81b993c7b2218c1f9b4fe0f2",
+    "semantic_hash": "655ff3dc81b993c7b2218c1f9b4fe0f2"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/services/reviewService.ts": {
+    "mtime": 1783933263.8159556,
+    "ast_hash": "efad7c8656df528936b044a745373a8a",
+    "semantic_hash": "efad7c8656df528936b044a745373a8a"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/services/summaryService.ts": {
+    "mtime": 1783932586.326177,
+    "ast_hash": "7e6b8e0546a7a5c2888308256897a1a9",
+    "semantic_hash": "7e6b8e0546a7a5c2888308256897a1a9"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/src/services/userService.ts": {
+    "mtime": 1783938871.8050697,
+    "ast_hash": "ca3f4af77858c4880ca6d403b667bd59",
+    "semantic_hash": "ca3f4af77858c4880ca6d403b667bd59"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/contract/setup.ts": {
+    "mtime": 1783932575.2792015,
+    "ast_hash": "f5919cb49edd3d4ecfcf2087fbd79576",
+    "semantic_hash": "f5919cb49edd3d4ecfcf2087fbd79576"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/contract/test_auth_login.ts": {
+    "mtime": 1783932521.198542,
+    "ast_hash": "96b369eefaa75fe08da0ea93f6909e36",
+    "semantic_hash": "96b369eefaa75fe08da0ea93f6909e36"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/contract/test_auth_rbac_cookie.ts": {
+    "mtime": 1783932521.2048798,
+    "ast_hash": "9ce23fd17ec313785907700b4549caee",
+    "semantic_hash": "9ce23fd17ec313785907700b4549caee"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/contract/test_clients_crud.ts": {
+    "mtime": 1783938815.269699,
+    "ast_hash": "73a9c181740f6015656514311665732f",
+    "semantic_hash": "73a9c181740f6015656514311665732f"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/contract/test_clients_search.ts": {
+    "mtime": 1783938594.69992,
+    "ast_hash": "4330385431f1f9cc8262461eceea2a96",
+    "semantic_hash": "4330385431f1f9cc8262461eceea2a96"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/contract/test_executions_post.ts": {
+    "mtime": 1783932521.2106292,
+    "ast_hash": "93deea030b672148d41f9195a86cba1f",
+    "semantic_hash": "93deea030b672148d41f9195a86cba1f"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/contract/test_orders_approve.ts": {
+    "mtime": 1783932521.2165155,
+    "ast_hash": "d8210a26b25f526b59d547b769270ac2",
+    "semantic_hash": "d8210a26b25f526b59d547b769270ac2"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/contract/test_orders_assign.ts": {
+    "mtime": 1783932521.2219698,
+    "ast_hash": "b2dee6c5ec90b118ea0b0d10c96c3a8b",
+    "semantic_hash": "b2dee6c5ec90b118ea0b0d10c96c3a8b"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/contract/test_orders_cancel.ts": {
+    "mtime": 1783939295.1956928,
+    "ast_hash": "35bd5895b590842d84a02849a162d7d6",
+    "semantic_hash": "35bd5895b590842d84a02849a162d7d6"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/contract/test_orders_edit_client.ts": {
+    "mtime": 1783939284.2021477,
+    "ast_hash": "1821b1ec5ec8fb60f2378cd673667930",
+    "semantic_hash": "1821b1ec5ec8fb60f2378cd673667930"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/contract/test_orders_get.ts": {
+    "mtime": 1783932521.2275186,
+    "ast_hash": "4f28ca93ab9887209221e8b385f4cba8",
+    "semantic_hash": "4f28ca93ab9887209221e8b385f4cba8"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/contract/test_orders_list.ts": {
+    "mtime": 1783932521.236018,
+    "ast_hash": "7b935447fc685c07b1a71a41c7233c46",
+    "semantic_hash": "7b935447fc685c07b1a71a41c7233c46"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/contract/test_orders_list_filters.ts": {
+    "mtime": 1783932598.6310434,
+    "ast_hash": "5369a43caeeb2140698b8e492f1637d7",
+    "semantic_hash": "5369a43caeeb2140698b8e492f1637d7"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/contract/test_orders_post.ts": {
+    "mtime": 1783932521.2495852,
+    "ast_hash": "d42a547f1e99828e6d03e5b9b66e356f",
+    "semantic_hash": "d42a547f1e99828e6d03e5b9b66e356f"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/contract/test_orders_reject.ts": {
+    "mtime": 1783932521.2554736,
+    "ast_hash": "36da7f29bc34cf803b3b69e51f6b3ede",
+    "semantic_hash": "36da7f29bc34cf803b3b69e51f6b3ede"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/contract/test_technicians_activo.ts": {
+    "mtime": 1783932521.260997,
+    "ast_hash": "e054710e81ca6136ef202936d2eced34",
+    "semantic_hash": "e054710e81ca6136ef202936d2eced34"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/contract/test_technicians_create_update.ts": {
+    "mtime": 1783939157.340619,
+    "ast_hash": "67b95dff16b9ba4c505e293e6954da8a",
+    "semantic_hash": "67b95dff16b9ba4c505e293e6954da8a"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/contract/test_technicians_list.ts": {
+    "mtime": 1783932605.8013666,
+    "ast_hash": "48a4a798d625b44f0252eedf272951a0",
+    "semantic_hash": "48a4a798d625b44f0252eedf272951a0"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/env.setup.ts": {
+    "mtime": 1783682575.1436927,
+    "ast_hash": "58dd9be33a5299bc557904e1b5619d98",
+    "semantic_hash": "58dd9be33a5299bc557904e1b5619d98"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/helpers/fixtures.ts": {
+    "mtime": 1783932439.416877,
+    "ast_hash": "2a81c1260db8e7ba8d6ead22eaa646f0",
+    "semantic_hash": "2a81c1260db8e7ba8d6ead22eaa646f0"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/integration/test_audit_failure.ts": {
+    "mtime": 1783932791.4396002,
+    "ast_hash": "f86a22d1511cf12fac4e90c287470fd8",
+    "semantic_hash": "f86a22d1511cf12fac4e90c287470fd8"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/integration/test_auth_login_roles.ts": {
+    "mtime": 1783932807.9243906,
+    "ast_hash": "ae208949e730b67c346e3d29fe0a57fc",
+    "semantic_hash": "ae208949e730b67c346e3d29fe0a57fc"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/integration/test_auth_logout.ts": {
+    "mtime": 1783932815.2055702,
+    "ast_hash": "a0e5301d83317cf7c5c428d3ae5805af",
+    "semantic_hash": "a0e5301d83317cf7c5c428d3ae5805af"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/integration/test_auth_ratelimit.ts": {
+    "mtime": 1783932523.729891,
+    "ast_hash": "28506cfce00bcf59b92e1d7c9faf3787",
+    "semantic_hash": "28506cfce00bcf59b92e1d7c9faf3787"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/integration/test_auth_refresh.ts": {
+    "mtime": 1783932523.7370932,
+    "ast_hash": "117b9a9d3b1b462e1849cfc3292c1e4a",
+    "semantic_hash": "117b9a9d3b1b462e1849cfc3292c1e4a"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/integration/test_clients_crud.ts": {
+    "mtime": 1783938824.6023507,
+    "ast_hash": "77d5296d66ee3ac0d55f3628bee67afc",
+    "semantic_hash": "77d5296d66ee3ac0d55f3628bee67afc"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/integration/test_clients_search.ts": {
+    "mtime": 1783938605.7771544,
+    "ast_hash": "46eaf12a7a13400dff92d7c842c505ff",
+    "semantic_hash": "46eaf12a7a13400dff92d7c842c505ff"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/integration/test_idp_failure.ts": {
+    "mtime": 1783932534.3531704,
+    "ast_hash": "db930c36406e554dc67908e118dd8262",
+    "semantic_hash": "db930c36406e554dc67908e118dd8262"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/integration/test_orders_assign_dropdown.ts": {
+    "mtime": 1783939622.1445422,
+    "ast_hash": "51c7a3c6e3b76243810a4a364ed94e9a",
+    "semantic_hash": "51c7a3c6e3b76243810a4a364ed94e9a"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/integration/test_orders_edit_cancel.ts": {
+    "mtime": 1783939318.2066894,
+    "ast_hash": "1025065ef86a478979ec4c9e2815964e",
+    "semantic_hash": "1025065ef86a478979ec4c9e2815964e"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/integration/test_orders_list_pagination.ts": {
+    "mtime": 1783932827.8270369,
+    "ast_hash": "907fd854fd8f9dadae4c4aef235a28ae",
+    "semantic_hash": "907fd854fd8f9dadae4c4aef235a28ae"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/integration/test_rbac_matrix.ts": {
+    "mtime": 1783932554.4512362,
+    "ast_hash": "bcc5a15159a11da9eb951e615a2f8995",
+    "semantic_hash": "bcc5a15159a11da9eb951e615a2f8995"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/integration/test_technicians_active_order_count.ts": {
+    "mtime": 1783939581.7086642,
+    "ast_hash": "f8c621783d46fa1371da90b16a723b62",
+    "semantic_hash": "f8c621783d46fa1371da90b16a723b62"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/integration/test_technicians_create_update.ts": {
+    "mtime": 1783939166.9944878,
+    "ast_hash": "c3b820cd26b14bbd72df695143300a16",
+    "semantic_hash": "c3b820cd26b14bbd72df695143300a16"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/integration/test_us1_edge_cases.ts": {
+    "mtime": 1783932542.5762913,
+    "ast_hash": "1594c66b1a917df3e8c3f29782e30cde",
+    "semantic_hash": "1594c66b1a917df3e8c3f29782e30cde"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/integration/test_us1_encryption_failure.ts": {
+    "mtime": 1783932523.7941484,
+    "ast_hash": "223bd5fbc625d5772bfb18273ec68741",
+    "semantic_hash": "223bd5fbc625d5772bfb18273ec68741"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/integration/test_us1_storage_failure.ts": {
+    "mtime": 1783932523.8018289,
+    "ast_hash": "1375ddbce8513de9973b8c3db1b8f54a",
+    "semantic_hash": "1375ddbce8513de9973b8c3db1b8f54a"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/integration/test_us1_submit_execution.ts": {
+    "mtime": 1783932523.811313,
+    "ast_hash": "456f7e13a3a920586ce4e41df9970bcf",
+    "semantic_hash": "456f7e13a3a920586ce4e41df9970bcf"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/integration/test_us2_assign.ts": {
+    "mtime": 1783932523.820906,
+    "ast_hash": "d9f635842588d17c1fd2c4a8ccb7f696",
+    "semantic_hash": "d9f635842588d17c1fd2c4a8ccb7f696"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/integration/test_us2_deactivate_reassign.ts": {
+    "mtime": 1783932523.8283153,
+    "ast_hash": "a84fbd8439747402728ca33855f50bd8",
+    "semantic_hash": "a84fbd8439747402728ca33855f50bd8"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/integration/test_us3_concurrent_conflict.ts": {
+    "mtime": 1783932523.8348062,
+    "ast_hash": "8cb496259050bd18a5336046721f9b2b",
+    "semantic_hash": "8cb496259050bd18a5336046721f9b2b"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/integration/test_us3_review.ts": {
+    "mtime": 1783932523.8412209,
+    "ast_hash": "ebe548cbdd45815000fd1a1526cd6d77",
+    "semantic_hash": "ebe548cbdd45815000fd1a1526cd6d77"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/integration/test_us4_listing.ts": {
+    "mtime": 1783932842.2395227,
+    "ast_hash": "e243cc79612cbb6c5794dea0efbc70f9",
+    "semantic_hash": "e243cc79612cbb6c5794dea0efbc70f9"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/integration/test_us5_summary.ts": {
+    "mtime": 1783932850.183979,
+    "ast_hash": "6e52b97d1287ec691e2ff48130d9f7f7",
+    "semantic_hash": "6e52b97d1287ec691e2ff48130d9f7f7"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/performance/load_check.ts": {
+    "mtime": 1783932976.7965693,
+    "ast_hash": "a9c717fe18b56abc09e07c1b72189d86",
+    "semantic_hash": "a9c717fe18b56abc09e07c1b72189d86"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/unit/test_auth_service.ts": {
+    "mtime": 1783932967.3773239,
+    "ast_hash": "6cd5c4cc8c8ab951dd8abc61b215f6fc",
+    "semantic_hash": "6cd5c4cc8c8ab951dd8abc61b215f6fc"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tests/unit/test_tls_enforce.ts": {
+    "mtime": 1783932418.3305721,
+    "ast_hash": "93467c222fab4bdb528538b9dc168585",
+    "semantic_hash": "93467c222fab4bdb528538b9dc168585"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/tsconfig.json": {
+    "mtime": 1783933170.5473316,
+    "ast_hash": "6656d8f7a1de03baf2cf5b2ff19ffd11",
+    "semantic_hash": "6656d8f7a1de03baf2cf5b2ff19ffd11"
+  },
+  "/Users/davidperezbellon/Proyectos/convotis-bootcamp/proyecto-final/backend/render.yaml": {
+    "mtime": 1784029355.4200888,
+    "ast_hash": "2ecef05634ef51a42503d1165205e858",
+    "semantic_hash": "2ecef05634ef51a42503d1165205e858"
+  }
+}
