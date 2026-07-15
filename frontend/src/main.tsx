@@ -10,3 +10,4 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
 );
 // smoke test ci-develop-front
 // smoke test ci-develop-front 2
+// smoke test ci-develop-front 3
